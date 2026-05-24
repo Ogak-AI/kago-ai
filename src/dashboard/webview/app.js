@@ -17,12 +17,17 @@ let state = {
   derived: null,
   isModerator: false,
   currentUsername: '',
-  currentFilter: 'all',        // priority filter
-  currentCategory: 'all',      // category filter
+  currentFilter: 'all',
+  currentCategory: 'all',
   loading: true,
   actionResult: null,
-  batchSelected: new Set(),  // Set of selected itemIds for batch moderation
-  auditLog: [],              // AuditEntry[] from server
+  batchSelected: new Set(),
+  auditLog: [],
+  rateLimitInfo: null,
+  aiModeStatus: 'ai_active',
+  healthScore: null,
+  raidAlert: null,
+  moderationSummary: null,
 };
 
 // ──────────────────────────────────────────────────────────
@@ -50,8 +55,13 @@ window.addEventListener('message', (event) => {
       currentUsername: payload.currentUsername || '',
       loading: false,
       actionResult: payload.actionResult || null,
-      batchSelected: new Set(), // clear selection on refresh
+      batchSelected: new Set(),
       auditLog: payload.auditLog || [],
+      rateLimitInfo: payload.rateLimitInfo || null,
+      aiModeStatus: payload.aiModeStatus || 'ai_active',
+      healthScore: payload.healthScore || null,
+      raidAlert: payload.raidAlert || null,
+      moderationSummary: payload.moderationSummary || null,
     };
     renderAll();
     updateBatchBar();
@@ -116,7 +126,12 @@ function renderAll() {
   renderSettings();
   renderRules();
   renderAuditLog();
+  renderHealth();
+  renderRaidAlert();
+  renderModerationSummary();
   updateStatusBadge();
+  updateAiModeBadge();
+  renderCharts();
 }
 
 
@@ -127,7 +142,8 @@ function renderStats() {
   const m = state.metrics;
   const d = state.derived;
 
-  const pendingCount = state.queueItems.filter(i => i.status === 'pending').length;
+  const pendingItems = state.queueItems.filter(i => i.status === 'pending');
+  const pendingCount = pendingItems.length;
 
   document.getElementById('totalScanned').textContent =
     m ? formatNum(m.totalScanned) : '0';
@@ -139,6 +155,16 @@ function renderStats() {
 
   // Update queue badge
   document.getElementById('queueBadge').textContent = String(pendingCount);
+
+  // Queue stats mini-bar
+  const critCount = pendingItems.filter(i => i.priorityLevel === 'critical').length;
+  const highCount = pendingItems.filter(i => i.priorityLevel === 'high').length;
+  const medCount = pendingItems.filter(i => i.priorityLevel === 'medium').length;
+  const lowCount = pendingItems.filter(i => i.priorityLevel === 'low').length;
+  setText('qsCritical', String(critCount));
+  setText('qsHigh', String(highCount));
+  setText('qsMedium', String(medCount));
+  setText('qsLow', String(lowCount));
 }
 
 // ──────────────────────────────────────────────────────────
@@ -503,7 +529,7 @@ function renderMetrics() {
   // Impact Summary (top section)
   if (d) {
     setText('impactAutoRate', d.autoModRate + '%');
-    setText('impactTimeSaved', d.timeSavedHours + 'h');
+    setText('impactTimeSaved', d.timeSavedToday || (d.timeSavedHours + 'h'));
     setText('impactQueueReduction', d.queueReductionEst + '%');
     setText('impactFPRate', d.falsePositiveRate + '%');
   }
@@ -514,6 +540,7 @@ function renderMetrics() {
     ['Total Scanned', formatNum(m.totalScanned)],
     ['Auto-Removed', formatNum(m.autoRemoved)],
     ['Auto-Approved', formatNum(m.autoApproved)],
+    ['Auto-Banned', formatNum(m.autoBanned || 0)],
     ['Manually Reviewed', formatNum(m.manuallyApproved + m.manuallyRemoved)],
     ['False Positives', formatNum(m.falsePositives)],
   ].map(([name, val]) => `
@@ -523,23 +550,26 @@ function renderMetrics() {
     </div>
   `).join('');
 
-  // Violation chart
+  // Violation chart (expanded categories)
   const chart = document.getElementById('violationChart');
-  const total = m.totalScanned || 1;
   const cats = [
-    ['Spam', m.spamCount, 'var(--orange)'],
-    ['Toxicity', m.toxicityCount, 'var(--red)'],
-    ['Hate Speech', m.hateSpeechCount, '#ff6b6b'],
-    ['Scam', m.scamCount, '#fb923c'],
-    ['Rule Violation', m.ruleViolationCount, 'var(--yellow)'],
-    ['Low Effort', m.lowEffortCount, 'var(--blue)'],
-    ['Clean', m.cleanCount, 'var(--green)'],
-  ];
+    ['Spam', m.spamCount || 0, 'var(--orange)'],
+    ['Toxicity', m.toxicityCount || 0, 'var(--red)'],
+    ['Hate Speech', m.hateSpeechCount || 0, '#ff6b6b'],
+    ['Scam', m.scamCount || 0, '#fb923c'],
+    ['Rule Violation', m.ruleViolationCount || 0, 'var(--yellow)'],
+    ['Low Effort', m.lowEffortCount || 0, 'var(--blue)'],
+    ['Self-Promo', m.selfPromotionCount || 0, '#a855f7'],
+    ['Manipulation', m.manipulationCount || 0, '#f59e0b'],
+    ['Brigading', m.brigadingCount || 0, '#14b8a6'],
+    ['Clean', m.cleanCount || 0, 'var(--green)'],
+  ].filter(([, count]) => count > 0);
+  const maxCat = Math.max(...cats.map(([, c]) => c), 1);
   chart.innerHTML = cats.map(([label, count, color]) => `
     <div class="chart-row">
       <div class="chart-label">${label}</div>
       <div class="chart-bar-track">
-        <div class="chart-bar-fill" style="width:${Math.round((count/total)*100)}%;background:${color}"></div>
+        <div class="chart-bar-fill" style="width:${Math.round((count/maxCat)*100)}%;background:${color}"></div>
       </div>
       <div class="chart-count">${formatNum(count)}</div>
     </div>
@@ -552,7 +582,9 @@ function renderMetrics() {
       <div class="perf-item"><span class="perf-label">Auto-Mod Rate</span><span class="perf-value perf-green">${d.autoModRate}%</span></div>
       <div class="perf-item"><span class="perf-label">Est. Time Saved</span><span class="perf-value perf-purple">${d.timeSavedHours}h</span></div>
       <div class="perf-item"><span class="perf-label">False Positive Rate</span><span class="perf-value perf-orange">${d.falsePositiveRate}%</span></div>
-      <div class="perf-item"><span class="perf-label">Queue Reduction Est.</span><span class="perf-value perf-green">${d.queueReductionEst}%</span></div>
+      <div class="perf-item"><span class="perf-label">Queue Reduction</span><span class="perf-value perf-green">${d.queueReductionEst}%</span></div>
+      <div class="perf-item"><span class="perf-label">Avg Response Time</span><span class="perf-value perf-blue">${d.avgResponseTimeSec || 0}s</span></div>
+      <div class="perf-item"><span class="perf-label">Mod Efficiency Score</span><span class="perf-value perf-purple">${d.moderatorEfficiencyScore || 0}%</span></div>
     `;
   }
 }
@@ -569,6 +601,13 @@ function renderSettings() {
   setText('cfg-trustThreshold', (s.trustedUserThreshold ?? '—') + (s.trustedUserThreshold ? '/100' : ''));
   setText('cfg-removalComments', s.enableRemovalComments ? 'Enabled' : 'Disabled');
   setText('cfg-rules', s.subredditRules ?? '—');
+
+  // API usage and cost from rateLimitInfo
+  const rli = state.rateLimitInfo;
+  if (rli) {
+    setText('cfg-apiUsage', `${rli.todayCalls} / ${rli.dailyLimit}${rli.isRateLimited ? ' (LIMIT REACHED)' : ''}`);
+    setText('cfg-cost', `Today: ${rli.estimatedCostToday} · Total: ${rli.totalCost}`);
+  }
 }
 
 // ──────────────────────────────────────────────────────────
@@ -630,6 +669,136 @@ function showToast(msg) {
   toast.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ──────────────────────────────────────────────────────────
+// Health Tab
+// ──────────────────────────────────────────────────────────
+function renderHealth() {
+  const hs = state.healthScore;
+  if (!hs) {
+    const el = document.getElementById('healthScoreDisplay');
+    if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">No health data yet</div><div class="empty-sub">Health score will appear as data accumulates.</div></div>';
+    return;
+  }
+
+  const display = document.getElementById('healthScoreDisplay');
+  if (!display) return;
+
+  const overallColor = hs.overall >= 80 ? 'var(--green)' : hs.overall >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+  display.innerHTML = `
+    <div class="impact-card" style="grid-column:1/-1;background:linear-gradient(135deg,${overallColor}11,transparent)">
+      <div class="impact-value" style="font-size:48px;-webkit-text-fill-color:${overallColor};background:${overallColor}">${hs.overall}/100</div>
+      <div class="impact-label">Overall Health</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-value" style="font-size:20px;-webkit-text-fill-color:var(--accent);background:var(--accent)">${hs.categories.contentSafety}</div>
+      <div class="impact-label">Content Safety</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-value" style="font-size:20px;-webkit-text-fill-color:var(--green);background:var(--green)">${hs.categories.modEfficiency}</div>
+      <div class="impact-label">Mod Efficiency</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-value" style="font-size:20px;-webkit-text-fill-color:var(--blue);background:var(--blue)">${hs.categories.userHealth}</div>
+      <div class="impact-label">User Health</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-value" style="font-size:20px;-webkit-text-fill-color:var(--purple);background:var(--purple)">${hs.categories.responseTime}</div>
+      <div class="impact-label">Response Time</div>
+    </div>
+  `;
+
+  // Risk Indicators
+  const ri = document.getElementById('healthRiskIndicators');
+  if (ri) {
+    if (!hs.riskIndicators || hs.riskIndicators.length === 0) {
+      ri.innerHTML = '<div style="color:var(--green);font-weight:600">No risk indicators detected. Community is healthy.</div>';
+    } else {
+      ri.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">' +
+        hs.riskIndicators.map(r => `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--yellow-bg);border:1px solid rgba(234,179,8,0.2);border-radius:var(--radius-sm);color:var(--yellow);font-size:12px"><span>⚠</span><span>${escHtml(r)}</span></div>`).join('') +
+        '</div>';
+    }
+  }
+
+  // Recommendations
+  const rec = document.getElementById('healthRecommendations');
+  if (rec) {
+    if (!hs.recommendations || hs.recommendations.length === 0) {
+      rec.innerHTML = '<div style="color:var(--text-muted)">No recommendations at this time.</div>';
+    } else {
+      rec.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">' +
+        hs.recommendations.map(r => `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--accent-glow);border:1px solid var(--border-strong);border-radius:var(--radius-sm);color:var(--text-accent);font-size:12px"><span>→</span><span>${escHtml(r)}</span></div>`).join('') +
+        '</div>';
+    }
+  }
+}
+
+function renderRaidAlert() {
+  const raid = state.raidAlert;
+  const section = document.getElementById('raidAlertSection');
+  if (!section) return;
+
+  if (!raid || raid.status !== 'active') {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  const content = document.getElementById('raidAlertContent');
+  if (!content) return;
+
+  const sevColor = raid.severity === 'critical' ? 'var(--red)' : raid.severity === 'high' ? 'var(--orange)' : 'var(--yellow)';
+
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:4px">
+      <div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:var(--radius-md);text-align:center">
+        <div style="font-size:24px;font-weight:800;color:${sevColor}">${raid.itemCount}</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Items</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:var(--radius-md);text-align:center">
+        <div style="font-size:24px;font-weight:800;color:${sevColor}">${raid.uniqueAuthors}</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Authors</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:var(--radius-md);text-align:center">
+        <div style="font-size:24px;font-weight:800;color:${sevColor}">${sevColor === 'var(--red)' ? 'CRITICAL' : sevColor === 'var(--orange)' ? 'HIGH' : 'MEDIUM'}</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Severity</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+      Categories: ${raid.categories.join(', ')}
+    </div>
+  `;
+}
+
+function renderModerationSummary() {
+  const summary = state.moderationSummary;
+  const el = document.getElementById('moderationSummaryContent');
+  if (!el) return;
+
+  if (!summary) {
+    el.innerHTML = '<div style="color:var(--text-muted)">No summary data available yet.</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${summary.highlights && summary.highlights.length > 0 ? summary.highlights.map(h =>
+        `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary)">
+          <span style="color:var(--green)">●</span>
+          <span>${escHtml(h)}</span>
+        </div>`
+      ).join('') : '<div style="color:var(--text-muted)">No highlights yet</div>'}
+    </div>
+    ${summary.notableEvents && summary.notableEvents.length > 0 ? `
+    <div style="margin-top:10px">
+      <div style="font-size:11px;font-weight:600;color:var(--orange);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Notable Events</div>
+      ${summary.notableEvents.map(e =>
+        `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--orange-bg);border-radius:var(--radius-sm);margin-bottom:4px;font-size:12px;color:var(--orange)"><span>🔔</span><span>${escHtml(e)}</span></div>`
+      ).join('')}
+    </div>` : ''}
+  `;
 }
 
 // ──────────────────────────────────────────────────────────
@@ -824,3 +993,60 @@ function closeConfirmModal() {
     if (e.target === e.currentTarget) closeConfirmModal();
   });
 })();
+
+// ──────────────────────────────────────────────────────────
+// AI Mode Badge
+// ──────────────────────────────────────────────────────────
+function updateAiModeBadge() {
+  const badge = document.getElementById('aiModeBadge');
+  const textEl = document.getElementById('aiModeText');
+  if (!badge || !textEl) return;
+
+  badge.classList.remove('heuristic', 'rate-limited');
+
+  switch (state.aiModeStatus) {
+    case 'heuristic_only':
+      badge.classList.add('heuristic');
+      textEl.textContent = 'Heuristic Only';
+      break;
+    case 'rate_limited':
+      badge.classList.add('rate-limited');
+      textEl.textContent = 'Rate Limited';
+      break;
+    default:
+      textEl.textContent = 'AI Active';
+      break;
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// Charts Integration (uses SentinelCharts from charts.js)
+// ──────────────────────────────────────────────────────────
+function renderCharts() {
+  if (!window.SentinelCharts) return;
+  const m = state.metrics;
+  if (!m) return;
+
+  // Donut chart — violation distribution
+  const catData = {
+    spam: m.spamCount || 0,
+    toxicity: m.toxicityCount || 0,
+    hate_speech: m.hateSpeechCount || 0,
+    scam: m.scamCount || 0,
+    rule_violation: m.ruleViolationCount || 0,
+    low_effort: m.lowEffortCount || 0,
+    self_promotion: m.selfPromotionCount || 0,
+    manipulation: m.manipulationCount || 0,
+  };
+
+  const donutEl = document.getElementById('donutChartContainer');
+  if (donutEl) window.SentinelCharts.renderDonutChart(donutEl, catData);
+
+  // Action breakdown
+  const actionEl = document.getElementById('actionBreakdownContainer');
+  if (actionEl) window.SentinelCharts.renderActionBreakdown(actionEl, m);
+
+  // Trust distribution
+  const trustEl = document.getElementById('trustDistChart');
+  if (trustEl) window.SentinelCharts.renderTrustDistribution(trustEl, state.topUsers);
+}

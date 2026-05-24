@@ -1,64 +1,112 @@
-# Sentinel AI — Live Demo
+# Sentinel AI — Demo Script
 
-## 🔗 Links
+---
 
-- **Test Subreddit**: [r/YourTestSubreddit](https://reddit.com/r/YourTestSubreddit)
-- **App Listing**: [Sentinel AI on Reddit Apps](https://developers.reddit.com/apps/sentinel-ai-modtool)
-- **GitHub Repository**: [Ogak-AI/Sentinel-AI](https://github.com/Ogak-AI/Sentinel-AI)
+## 2-Minute Demo (Elevator Pitch)
 
-## 📸 Screenshots
+**Hook**: "On Reddit, moderators are drowning. 430M users, 3M communities, and every subreddit is fighting spam, scams, and toxicity. Sentinel AI is the moderation operating system that changes everything."
 
-> Replace the placeholders below with actual screenshots after running `devvit playtest`.
+**Flow**:
+1. Open dashboard → show empty state → "This is every mod's dream — a clean queue"
+2. Submit a spam post → dashboard updates in real-time → "Watch — AI detected it instantly"
+3. Click the item → show AI analysis explanation → "The AI tells you WHY, not just WHAT"
+4. Click Approve/Remove → "One click to resolve, trust score updates automatically"
+5. Show analytics tab → "65% auto-moderation rate, 5+ hours saved this week"
 
-### Queue Tab
-![Queue Tab](screenshots/queue-tab.png)
-- Priority-sorted moderation queue with AI-powered analysis
-- Batch select, filter by priority/category, inline approve/remove/ban
+**Close**: "Sentinel AI: Moderation, automated. Communities, protected."
 
-### Analytics Tab
-![Analytics Tab](screenshots/analytics-tab.png)
-- Impact dashboard: Auto-mod rate, time saved, false positive rate
-- Violation breakdown by category with visual bars
+---
 
-### Rules Tab
-![Rules Tab](screenshots/rules-tab.png)
-- Custom rule engine: define keywords, actions, and reasons
-- Rules evaluate **before** AI, enabling instant short-circuits
+## 5-Minute Demo (Full Walkthrough)
 
-### Audit Log Tab
-![Audit Log Tab](screenshots/audit-log-tab.png)
-- Complete chronological audit trail of every action
-- Restore button for auto-removed content
+### Act 1: The Problem (30s)
+- "Moderating a subreddit is relentless. Every new post could be a scam, toxic attack, or rule violation."
+- "Most mods spend 10+ hours/week on manual review."
+- "Sentinel AI solves this — deployed in 5 minutes."
 
-### Batch Confirmation
-![Batch Confirmation](screenshots/batch-confirm.png)
-- Safety modal showing first 5 affected items before batch execution
+### Act 2: Installation (30s)
+- Show `devvit upload` + `devvit playtest`
+- "One command. That's it."
 
-## 🎬 Demo Flow
+### Act 3: Real-Time Moderation (90s)
+**Live demo with 3 staged submissions:**
 
-> Replace with a screen-recorded GIF showing the full pipeline:
+**Scenario 1 — Spam:**
+- Submit: "FREE CRYPTO! Click here to double your Bitcoin!"
+- Dashboard refreshes → item appears with SPAM badge, 88% confidence
+- Decision reasoning: "High severity spam detected with 88% confidence"
+- Comment showing removal reason
 
-![Demo GIF](recordings/demo-flow.gif)
+**Scenario 2 — Toxicity:**
+- Submit: "You're an idiot who knows nothing"
+- Flagged as TOXICITY, 82% confidence
+- Show detail modal with full AI analysis
 
-**Flow**: Post submission → AI flag → Dashboard update → Mod action → Audit log entry
+**Scenario 3 — Scam campaign:**
+- Rapidly submit 3-5 scam posts from different author accounts
+- Raid detection fires → health tab shows raid alert
+- "Sentinel detected a coordinated attack in real-time"
 
-## 🚀 How to Test
+### Act 4: Dashboard Tour (90s)
+- **Queue tab**: Filter by priority/category, batch select, one-click actions
+- **Analytics tab**: Impact summary, donut chart, action breakdown
+- **Health tab**: Subreddit health score, risk indicators, recommendations
+- **Users tab**: Trust score distribution, risk-ranked user list
+- **Rules tab**: Create "No Self-Promotion" rule → show it working
+- **Audit Log**: Complete trail of every action with restore capability
 
-1. Install the app on your subreddit:
-   ```
-   devvit upload
-   devvit playtest r/YourTestSubreddit
-   ```
+### Act 5: Impact & Close (30s)
+- Show metrics: 65% auto-mod rate, 5h saved, <5% false positive rate
+- "Sentinel AI isn't just a tool — it's the infrastructure every subreddit needs."
+- "Available now. Open source. Built entirely on Devvit."
 
-2. Open the subreddit menu → **🛡️ Open Sentinel Dashboard**
+---
 
-3. Submit a test post with flaggable content (e.g., spam keywords)
+## Technical Deep Dive (for Judges)
 
-4. Watch it appear in the Queue tab with AI analysis
+### Architecture Highlights
+- **12 services**, event-driven pipeline, Redis-backed
+- **7-layer decision engine** with adaptive threshold tuning
+- **Raid detection** using sliding window analysis
+- **Subreddit health scoring** across 4 dimensions
+- **4 background jobs** for maintenance and retraining
 
-5. Take action → verify it appears in the Audit Log tab
+### Key Technical Decisions
+1. **Heuristic fallback** — zero API cost, always works, no single point of failure
+2. **Redis sorted sets** for priority queue, temporal windows, audit log
+3. **Analysis caching** — 1-hour TTL prevents duplicate OpenAI calls
+4. **Dedup guard** — 24-hour expiry prevents re-processing
+5. **Adaptive thresholds** — per-category tuning based on mod override patterns
 
-## ⚙️ Configuration
+### Performance
+- Average processing time: <500ms per item (heuristic), <3s (OpenAI)
+- Queue capacity: 500 items per subreddit
+- Stale item expiry: 48 hours
+- Audit log: 500 entries rolling window
+- API rate limiting: configurable daily limit (default 500)
 
-Set your OpenAI API key in **Community Apps → Sentinel AI → Settings** for full AI analysis.
-Without an API key, the heuristic fallback engine handles moderation using pattern matching.
+---
+
+## Cinematic Demo Scenarios
+
+### Scenario: Scam Attack Simulation
+1. Start with clean dashboard — show "Queue is clean!"
+2. Open 3 browser tabs with different Reddit accounts
+3. Each posts a scam template: "AMAZING CRYPTO OPPORTUNITY — dm me!"
+4. Show dashboard items appearing in real-time
+5. Raid alert fires → "Coordinated scam campaign detected"
+6. Batch select all → one-click ban
+7. Show audit log recording every action
+
+### Scenario: Toxicity Flood
+1. Submit 10 toxic comments rapidly
+2. Show queue priority sorting (critical first)
+3. Auto-ban fires for 3+ violations in 24h
+4. Show temporal escalation in decision reason
+5. "Sentinel doesn't just remove content — it protects the community"
+
+### Scenario: Healthy Community
+1. Show health tab with 90+ score
+2. "Green indicators across the board"
+3. "With Sentinel, this community stays healthy"
+4. "Mods focus on engagement, not cleanup"

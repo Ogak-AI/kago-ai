@@ -1,14 +1,19 @@
 {
   "name": "sentinel-ai",
-  "version": "0.0.1",
-  "description": "Sentinel AI: Smart Moderation & Queue Prioritization Engine for Reddit",
+  "version": "1.0.0",
+  "description": "Sentinel AI: The Moderation Operating System for Reddit — AI-powered, Devvit-native",
   "private": true,
   "scripts": {
     "dev": "devvit playtest",
     "upload": "devvit upload",
     "publish": "devvit publish",
     "build": "tsc --noEmit",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "test": "node src/tests/reputation.test.ts && node src/tests/rules.test.ts && node src/tests/queue.test.ts && node src/tests/ai.test.ts",
+    "test:reputation": "node src/tests/reputation.test.ts",
+    "test:rules": "node src/tests/rules.test.ts",
+    "test:queue": "node src/tests/queue.test.ts",
+    "test:ai": "node src/tests/ai.test.ts"
   },
   "dependencies": {
     "@devvit/public-api": "0.11.5"

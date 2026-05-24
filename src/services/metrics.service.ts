@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { RedisClient } from '@devvit/public-api';
-import type { SentinelMetrics, ViolationCategory } from '../types.js';
+import type { SentinelMetrics, DerivedStats, ViolationCategory } from '../types.js';
 import { Keys } from '../constants.js';
 
 // ──────────────────────────────────────────────
@@ -17,39 +17,56 @@ function serializeMetrics(m: SentinelMetrics): Record<string, string> {
     totalScanned: String(m.totalScanned),
     autoRemoved: String(m.autoRemoved),
     autoApproved: String(m.autoApproved),
+    autoBanned: String(m.autoBanned),
     manuallyApproved: String(m.manuallyApproved),
     manuallyRemoved: String(m.manuallyRemoved),
     falsePositives: String(m.falsePositives),
+    falseNegatives: String(m.falseNegatives),
     spamCount: String(m.spamCount),
     toxicityCount: String(m.toxicityCount),
     ruleViolationCount: String(m.ruleViolationCount),
     lowEffortCount: String(m.lowEffortCount),
     scamCount: String(m.scamCount),
     hateSpeechCount: String(m.hateSpeechCount),
+    selfPromotionCount: String(m.selfPromotionCount),
+    nsfwCount: String(m.nsfwCount),
+    brigadingCount: String(m.brigadingCount),
+    manipulationCount: String(m.manipulationCount),
     cleanCount: String(m.cleanCount),
+    avgProcessingTimeMs: String(m.avgProcessingTimeMs),
+    processingTimeSamples: String(m.processingTimeSamples),
     lastReset: String(m.lastReset),
     lastUpdated: String(m.lastUpdated),
   };
 }
 
 function deserializeMetrics(data: Record<string, string>, subredditId: string): SentinelMetrics {
+  const p = (k: string, d = '0') => parseInt(data[k] ?? d, 10);
   return {
     subredditId,
-    totalScanned: parseInt(data.totalScanned ?? '0', 10),
-    autoRemoved: parseInt(data.autoRemoved ?? '0', 10),
-    autoApproved: parseInt(data.autoApproved ?? '0', 10),
-    manuallyApproved: parseInt(data.manuallyApproved ?? '0', 10),
-    manuallyRemoved: parseInt(data.manuallyRemoved ?? '0', 10),
-    falsePositives: parseInt(data.falsePositives ?? '0', 10),
-    spamCount: parseInt(data.spamCount ?? '0', 10),
-    toxicityCount: parseInt(data.toxicityCount ?? '0', 10),
-    ruleViolationCount: parseInt(data.ruleViolationCount ?? '0', 10),
-    lowEffortCount: parseInt(data.lowEffortCount ?? '0', 10),
-    scamCount: parseInt(data.scamCount ?? '0', 10),
-    hateSpeechCount: parseInt(data.hateSpeechCount ?? '0', 10),
-    cleanCount: parseInt(data.cleanCount ?? '0', 10),
-    lastReset: parseInt(data.lastReset ?? String(Date.now()), 10),
-    lastUpdated: parseInt(data.lastUpdated ?? String(Date.now()), 10),
+    totalScanned: p('totalScanned'),
+    autoRemoved: p('autoRemoved'),
+    autoApproved: p('autoApproved'),
+    autoBanned: p('autoBanned'),
+    manuallyApproved: p('manuallyApproved'),
+    manuallyRemoved: p('manuallyRemoved'),
+    falsePositives: p('falsePositives'),
+    falseNegatives: p('falseNegatives'),
+    spamCount: p('spamCount'),
+    toxicityCount: p('toxicityCount'),
+    ruleViolationCount: p('ruleViolationCount'),
+    lowEffortCount: p('lowEffortCount'),
+    scamCount: p('scamCount'),
+    hateSpeechCount: p('hateSpeechCount'),
+    selfPromotionCount: p('selfPromotionCount'),
+    nsfwCount: p('nsfwCount'),
+    brigadingCount: p('brigadingCount'),
+    manipulationCount: p('manipulationCount'),
+    cleanCount: p('cleanCount'),
+    avgProcessingTimeMs: p('avgProcessingTimeMs'),
+    processingTimeSamples: p('processingTimeSamples'),
+    lastReset: p('lastReset', String(Date.now())),
+    lastUpdated: p('lastUpdated', String(Date.now())),
   };
 }
 
@@ -64,21 +81,14 @@ async function getOrCreate(redis: RedisClient, subredditId: string): Promise<Sen
   }
   const fresh: SentinelMetrics = {
     subredditId,
-    totalScanned: 0,
-    autoRemoved: 0,
-    autoApproved: 0,
-    manuallyApproved: 0,
-    manuallyRemoved: 0,
-    falsePositives: 0,
-    spamCount: 0,
-    toxicityCount: 0,
-    ruleViolationCount: 0,
-    lowEffortCount: 0,
-    scamCount: 0,
-    hateSpeechCount: 0,
-    cleanCount: 0,
-    lastReset: Date.now(),
-    lastUpdated: Date.now(),
+    totalScanned: 0, autoRemoved: 0, autoApproved: 0, autoBanned: 0,
+    manuallyApproved: 0, manuallyRemoved: 0,
+    falsePositives: 0, falseNegatives: 0,
+    spamCount: 0, toxicityCount: 0, ruleViolationCount: 0, lowEffortCount: 0,
+    scamCount: 0, hateSpeechCount: 0, selfPromotionCount: 0, nsfwCount: 0,
+    brigadingCount: 0, manipulationCount: 0, cleanCount: 0,
+    avgProcessingTimeMs: 0, processingTimeSamples: 0,
+    lastReset: Date.now(), lastUpdated: Date.now(),
   };
   await redis.hSet(Keys.metrics(subredditId), serializeMetrics(fresh));
   return fresh;
@@ -94,13 +104,17 @@ export async function recordScan(
   m.totalScanned += 1;
   m.lastUpdated = Date.now();
 
-  const catMap: Record<ViolationCategory, keyof SentinelMetrics> = {
+  const catMap: Partial<Record<ViolationCategory, keyof SentinelMetrics>> = {
     spam: 'spamCount',
     toxicity: 'toxicityCount',
     rule_violation: 'ruleViolationCount',
     low_effort: 'lowEffortCount',
     scam: 'scamCount',
     hate_speech: 'hateSpeechCount',
+    self_promotion: 'selfPromotionCount',
+    nsfw: 'nsfwCount',
+    brigading: 'brigadingCount',
+    manipulation: 'manipulationCount',
     clean: 'cleanCount',
   };
 
@@ -161,19 +175,62 @@ export async function getMetrics(
 }
 
 /** Compute derived stats for display. */
-export function computeDerivedStats(m: SentinelMetrics): {
-  autoModRate: number;      // % of scanned content handled automatically
-  timeSavedHours: number;   // estimated hours saved (2 min per auto action)
-  falsePositiveRate: number; // % of flagged items that were false positives
-  queueReductionEst: number; // estimated % reduction in manual queue
-} {
-  const autoHandled = m.autoRemoved + m.autoApproved;
+export function computeDerivedStats(m: SentinelMetrics): DerivedStats {
+  const autoHandled = m.autoRemoved + m.autoApproved + m.autoBanned;
   const autoModRate = m.totalScanned > 0 ? Math.round((autoHandled / m.totalScanned) * 100) : 0;
   const timeSavedHours = parseFloat(((autoHandled * 2) / 60).toFixed(1));
   const flaggedCount = m.totalScanned - m.cleanCount;
   const falsePositiveRate =
     flaggedCount > 0 ? Math.round((m.falsePositives / flaggedCount) * 100) : 0;
-  const queueReductionEst = Math.round(autoModRate * 0.85); // conservative estimate
+  const queueReductionEst = Math.round(autoModRate * 0.85);
 
-  return { autoModRate, timeSavedHours, falsePositiveRate, queueReductionEst };
+  // Average response time in seconds
+  const avgResponseTimeSec = m.processingTimeSamples > 0
+    ? parseFloat((m.avgProcessingTimeMs / 1000).toFixed(2))
+    : 0;
+
+  // Moderator efficiency: ratio of total actions to manual actions (higher = less mod work)
+  const totalActions = autoHandled + m.manuallyApproved + m.manuallyRemoved;
+  const moderatorEfficiencyScore = totalActions > 0
+    ? Math.round((autoHandled / totalActions) * 100)
+    : 0;
+
+  // Time saved today estimate
+  const todayHours = parseFloat(((autoHandled * 2) / 60).toFixed(1));
+  const timeSavedToday = todayHours < 1 ? `${Math.round(todayHours * 60)}m` : `${todayHours}h`;
+
+  return {
+    autoModRate,
+    timeSavedHours,
+    falsePositiveRate,
+    queueReductionEst,
+    avgResponseTimeSec,
+    moderatorEfficiencyScore,
+    timeSavedToday,
+  };
+}
+
+/** Record a processing time sample to track average response time. */
+export async function recordProcessingTime(
+  redis: RedisClient,
+  subredditId: string,
+  timeMs: number,
+): Promise<void> {
+  const m = await getOrCreate(redis, subredditId);
+  const totalSamples = m.processingTimeSamples + 1;
+  // Running average
+  m.avgProcessingTimeMs = Math.round(
+    ((m.avgProcessingTimeMs * m.processingTimeSamples) + timeMs) / totalSamples
+  );
+  m.processingTimeSamples = totalSamples;
+  m.lastUpdated = Date.now();
+  await redis.hSet(Keys.metrics(subredditId), serializeMetrics(m));
+}
+
+/** Record an auto-ban action. */
+export async function recordAutoBan(redis: RedisClient, subredditId: string): Promise<void> {
+  const m = await getOrCreate(redis, subredditId);
+  m.autoBanned += 1;
+  m.lastUpdated = Date.now();
+  await redis.hSet(Keys.metrics(subredditId), serializeMetrics(m));
 }

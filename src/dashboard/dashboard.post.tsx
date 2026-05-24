@@ -22,6 +22,7 @@ import { loadSettings } from '../services/settings.service.js';
 import { loadCustomRules, saveCustomRules } from '../services/rules.service.js';
 import { recordAuditEntry, buildAuditEntry, getAuditLog } from '../services/audit.service.js';
 import { Keys, MAX_OVERRIDE_LOG } from '../constants.js';
+import type { HealthScorePayload, RaidAlertPayload, ModSummaryPayload } from '../types.js';
 
 
 // ──────────────────────────────────────────────
@@ -97,9 +98,40 @@ async function loadDashboardData(context: Context): Promise<InitDataPayload> {
   // Load audit log
   const auditLog = await getAuditLog(context.redis, subredditId, 50);
 
+  // Compute derived stats
+  const derived = computeDerivedStats(metrics);
+
+  // Rate limit info
+  let rateLimitInfo = undefined;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const callsStr = await context.redis.get(Keys.openaiCalls(subredditId, today));
+    const todayCalls = callsStr ? parseInt(callsStr, 10) : 0;
+    const costStr = await context.redis.get(Keys.cost(subredditId));
+    const totalCostNum = costStr ? parseFloat(costStr) : 0;
+    rateLimitInfo = {
+      todayCalls,
+      dailyLimit: settings.dailyApiLimit || 500,
+      isRateLimited: todayCalls >= (settings.dailyApiLimit || 500),
+      estimatedCostToday: '$' + (todayCalls * 0.00015).toFixed(4),
+      totalCost: '$' + totalCostNum.toFixed(4),
+    };
+  } catch {
+    // Non-critical
+  }
+
+  // AI mode status
+  let aiModeStatus: 'ai_active' | 'heuristic_only' | 'rate_limited' = 'ai_active';
+  if (!settings.openaiApiKey) {
+    aiModeStatus = 'heuristic_only';
+  } else if (rateLimitInfo?.isRateLimited) {
+    aiModeStatus = 'rate_limited';
+  }
+
   return {
     queueItems,
     metrics,
+    derived,
     topUsers,
     settings: {
       autoRemoveThreshold: settings.autoRemoveThreshold,
@@ -112,8 +144,11 @@ async function loadDashboardData(context: Context): Promise<InitDataPayload> {
     isModerator,
     currentUsername: username,
     auditLog,
+    rateLimitInfo,
+    aiModeStatus,
   };
 }
+
 
 
 // ──────────────────────────────────────────────

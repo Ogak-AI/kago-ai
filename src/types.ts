@@ -1,5 +1,6 @@
 // ============================================================
 // Sentinel AI – Shared Type Definitions
+// Complete type system for the moderation platform.
 // ============================================================
 
 // ──────────────────────────────────────────────
@@ -13,13 +14,17 @@ export type ViolationCategory =
   | 'low_effort'
   | 'scam'
   | 'hate_speech'
+  | 'self_promotion'
+  | 'nsfw'
+  | 'brigading'
+  | 'manipulation'
   | 'clean';
 
 export type SuggestedAction = 'remove' | 'approve' | 'review' | 'ban';
 
-export type Severity = 'low' | 'medium' | 'high';
+export type Severity = 'critical' | 'high' | 'medium' | 'low';
 
-export type PriorityLevel = 'high' | 'medium' | 'low';
+export type PriorityLevel = 'critical' | 'high' | 'medium' | 'low';
 
 export type ContentType = 'post' | 'comment';
 
@@ -33,23 +38,49 @@ export type ItemStatus =
   | 'mod_banned'
   | 'ignored';
 
+export type ReputationTier =
+  | 'trusted'      // 80–100
+  | 'established'  // 60–79
+  | 'neutral'      // 40–59
+  | 'suspicious'   // 25–39
+  | 'untrusted';   // 0–24
+
+export type RiskLevel = 'minimal' | 'low' | 'moderate' | 'high' | 'critical';
+
 // ──────────────────────────────────────────────
-// Subreddit Rule Engine
+// Custom Rule Engine
 // ──────────────────────────────────────────────
+
+export type RuleType = 'keyword' | 'regex' | 'user' | 'domain';
 
 /** A custom rule defined by moderators, evaluated before AI analysis. */
 export interface SubredditRule {
   id: string;
   name: string;
+  type: RuleType;
   /** Keywords that trigger this rule (case-insensitive, any match) */
   keywords: string[];
+  /** Regex patterns (only used when type === 'regex') */
+  regexPatterns?: string[];
+  /** Usernames (only used when type === 'user') */
+  targetUsers?: string[];
+  /** Blocked domains (only used when type === 'domain') */
+  blockedDomains?: string[];
   /** Confidence threshold (0–100) above which the action fires automatically */
   threshold: number;
   /** What to do when this rule fires */
   action: 'remove' | 'review' | 'ban';
+  /** Severity assigned to matches */
+  severity: Severity;
   /** Explanation shown to mods and in removal comments */
   reason: string;
   enabled: boolean;
+  /** Evaluation priority (lower = evaluated first) */
+  priority: number;
+  /** How many times this rule has been triggered */
+  hitCount: number;
+  /** When this rule was created */
+  createdAt: number;
 }
 
 // ──────────────────────────────────────────────
@@ -63,6 +94,7 @@ export interface DecisionResult {
     | 'auto_remove'
     | 'auto_approve'
     | 'auto_ban_temp'
+    | 'enqueue_critical'
     | 'enqueue_high'
     | 'enqueue_medium'
     | 'enqueue_low'
@@ -75,6 +107,12 @@ export interface DecisionResult {
   severity: Severity;
   /** Which rule triggered this (if custom rule engine) */
   triggeredRule?: string;
+  /** Which decision layer made this call */
+  decisionLayer: string;
+  /** Confidence score from analysis */
+  confidence: number;
+  /** Recommended next step for moderator */
+  recommendedNextStep: string;
 }
 
 // ──────────────────────────────────────────────
@@ -94,6 +132,10 @@ export interface AIAnalysisResult {
   suggestedAction: SuggestedAction;
   /** Was this result from the OpenAI API or the local heuristic fallback? */
   source: 'openai' | 'heuristic';
+  /** Risk summary for display */
+  riskSummary?: string;
+  /** Secondary categories detected */
+  secondaryCategories?: ViolationCategory[];
 }
 
 // ──────────────────────────────────────────────
@@ -122,14 +164,18 @@ export interface FlaggedItem {
   explanation: string;
   suggestedAction: SuggestedAction;
   analysisSource: 'openai' | 'heuristic';
+  riskSummary?: string;
   /** Decision Engine output — why the system decided what it did */
   decisionReason?: string;
+  /** Which decision layer triggered */
+  decisionLayer?: string;
   /** Which custom rule triggered this flag, if any */
   triggeredRule?: string;
 
   // Queue
   priorityScore: number; // 0–100 composite score used in sorted set
   priorityLevel: PriorityLevel;
+  reportCount: number;
 
   // Status
   status: ItemStatus;
@@ -148,30 +194,47 @@ export interface UserReputation {
   subredditId: string;
   /** 0 = completely untrusted, 100 = fully trusted */
   trustScore: number;
+  /** Computed risk level */
+  riskLevel: RiskLevel;
+  /** Computed reputation tier */
+  tier: ReputationTier;
   violations: number;
   approvals: number;
+  /** Total bans recorded */
+  bans: number;
+  /** Spam incidents */
+  spamCount: number;
   /** Account age at time of last update, in days */
   accountAgeDays: number;
   /** Reddit karma at time of last update */
   karma: number;
+  /** Approval ratio = approvals / (approvals + violations) */
+  approvalRatio: number;
   /** Violations in the last 24 hours (for temporal escalation) */
   recentViolations24h: number;
   /** Timestamp of the most recent violation */
   lastViolationAt?: number;
+  /** Moderator override count (times mods disagreed with AI about this user) */
+  overrideCount: number;
   lastUpdated: number; // epoch ms
 }
 
 // ──────────────────────────────────────────────
-// Moderator Override (for threshold tuning)
+// Moderator Override (for adaptive learning)
 // ──────────────────────────────────────────────
 
 export interface ModOverride {
   itemId: string;
   originalCategory: ViolationCategory;
   originalConfidence: number;
+  originalAction: SuggestedAction;
   modAction: ItemStatus;
   modUsername: string;
   timestamp: number;
+  /** Whether this was a false positive (AI flagged, mod approved) */
+  isFalsePositive: boolean;
+  /** Whether this was a false negative (AI approved, mod removed) */
+  isFalseNegative: boolean;
 }
 
 // ──────────────────────────────────────────────
@@ -179,16 +242,22 @@ export interface ModOverride {
 // ──────────────────────────────────────────────
 
 export interface AuditEntry {
+  id: string;
   timestamp: number;
-  actionType: 'auto_remove' | 'auto_approve' | 'manual_remove' | 'manual_approve' | 'manual_ban' | 'manual_ignore' | 'batch' | 'restore';
+  actionType: 'auto_remove' | 'auto_approve' | 'auto_ban' | 'manual_remove' | 'manual_approve' | 'manual_ban' | 'manual_ignore' | 'batch' | 'restore' | 'rule_update';
   contentId: string;
   contentType: 'post' | 'comment';
   contentSnippet: string;
   authorName: string;
   aiCategory: string;
   aiConfidence: number;
+  severity: Severity;
   triggeredBy: string; // 'ai_auto' | 'rule_engine' | 'moderator:{username}'
   reason: string;
+  /** Can this action be undone? */
+  reversible: boolean;
+  /** Has this action been reversed? */
+  reversed: boolean;
 }
 
 // ──────────────────────────────────────────────
@@ -200,17 +269,27 @@ export interface SentinelMetrics {
   totalScanned: number;
   autoRemoved: number;
   autoApproved: number;
+  autoBanned: number;
   manuallyApproved: number;
   manuallyRemoved: number;
-  falsePositives: number; // mods approved something Sentinel flagged for removal
+  falsePositives: number;
+  falseNegatives: number;
   spamCount: number;
   toxicityCount: number;
   ruleViolationCount: number;
   lowEffortCount: number;
   scamCount: number;
   hateSpeechCount: number;
+  selfPromotionCount: number;
+  nsfwCount: number;
+  brigadingCount: number;
+  manipulationCount: number;
   cleanCount: number;
-  lastReset: number; // epoch ms (start of current tracking period)
+  /** Average processing time in ms */
+  avgProcessingTimeMs: number;
+  /** Total processing time samples */
+  processingTimeSamples: number;
+  lastReset: number; // epoch ms
   lastUpdated: number;
 }
 
@@ -236,7 +315,7 @@ export interface SentinelSettings {
 // Dashboard Message Types (Blocks ↔ Webview)
 // ──────────────────────────────────────────────
 
-export type DashboardTab = 'queue' | 'users' | 'stats' | 'settings' | 'audit' | 'rules';
+export type DashboardTab = 'queue' | 'users' | 'stats' | 'settings' | 'audit' | 'rules' | 'health' | 'insights';
 
 export interface WebviewMessage {
   type:
@@ -247,7 +326,9 @@ export interface WebviewMessage {
     | 'SETTINGS_SAVE'
     | 'LOAD_MORE'
     | 'REFRESH'
-    | 'AUDIT_RESTORE';
+    | 'AUDIT_RESTORE'
+    | 'USER_SEARCH'
+    | 'RULE_TEST';
   payload?: unknown;
 }
 
@@ -279,9 +360,50 @@ export interface ThresholdTuningData {
 /** Mode indicator for dashboard header */
 export type AiModeStatus = 'ai_active' | 'heuristic_only' | 'rate_limited';
 
+/** Derived stats computed from raw metrics */
+export interface DerivedStats {
+  autoModRate: number;
+  timeSavedHours: number;
+  falsePositiveRate: number;
+  queueReductionEst: number;
+  avgResponseTimeSec: number;
+  moderatorEfficiencyScore: number;
+  timeSavedToday: string;
+}
+
+/** @see SubredditHealthScore in services/health.service */
+export interface HealthScorePayload {
+  overall: number;
+  categories: { contentSafety: number; modEfficiency: number; userHealth: number; responseTime: number; };
+  trends: { toxicityTrend: string; spamTrend: string; modBurdenTrend: string; };
+  riskIndicators: string[];
+  recommendations: string[];
+}
+
+/** @see RaidAlert in services/raid.service */
+export interface RaidAlertPayload {
+  id: string;
+  subredditId: string;
+  detectedAt: number;
+  itemCount: number;
+  uniqueAuthors: number;
+  categories: string[];
+  severity: 'critical' | 'high' | 'medium';
+  status: 'active' | 'resolved' | 'false_alarm';
+}
+
+/** @see ModerationSummary in services/summarizer.service */
+export interface ModSummaryPayload {
+  generatedAt: number;
+  period: string;
+  highlights: string[];
+  notableEvents: string[];
+}
+
 export interface InitDataPayload {
   queueItems: FlaggedItem[];
   metrics: SentinelMetrics;
+  derived: DerivedStats;
   topUsers: UserReputation[];
   settings: Partial<SentinelSettings>;
   customRules?: SubredditRule[];
@@ -292,6 +414,10 @@ export interface InitDataPayload {
   aiModeStatus?: AiModeStatus;
   thresholdTuning?: ThresholdTuningData;
   avgDailyVolume?: number;
+  queueStats?: { total: number; critical: number; high: number; medium: number; low: number };
+  healthScore?: HealthScorePayload;
+  raidAlert?: RaidAlertPayload;
+  moderationSummary?: ModSummaryPayload;
 }
 
 
@@ -313,4 +439,13 @@ export interface SettingsSavePayload {
 
 export interface RulesSavePayload {
   rules: SubredditRule[];
+}
+
+export interface UserSearchPayload {
+  query: string;
+}
+
+export interface RuleTestPayload {
+  ruleId: string;
+  testContent: string;
 }

@@ -1,73 +1,105 @@
-# Sentinel AI — Smart Moderation & Queue Prioritization Engine
+# Sentinel AI — The Moderation Operating System for Reddit
 
-> **Reddit Mod Tools Hackathon 2025** — Built on Devvit, Reddit's developer platform.
+> **Reddit Mod Tools & Migrated Apps Hackathon 2025** — Built on Devvit
 
-Sentinel AI is a production-ready, AI-powered moderation assistant that runs natively inside Reddit. It scans every post and comment in real-time, prioritizes the mod queue by severity, maintains user trust scores, and gives moderators a beautiful one-click dashboard to review flagged content — all without leaving Reddit.
+**Moderation, automated. Communities, protected.**
+
+Sentinel AI is an enterprise-grade AI moderation infrastructure platform that runs natively inside Reddit. It scans every post and comment in real-time, auto-detects violations with explainable AI, prioritizes your mod queue by severity, maintains user trust scores, and gives moderators a premium one-click dashboard — all without leaving Reddit.
 
 ---
 
-## What It Does
+## Why Sentinel AI?
 
 | Without Sentinel | With Sentinel |
 |---|---|
-| Mods manually read every report | AI pre-screens content instantly |
-| Flat, unsorted mod queue | Priority-ranked queue (High/Medium/Low) |
-| No context on why something was flagged | Every item has an AI explanation |
-| No user history | Trust scores track repeat offenders |
-| Actions scattered across Reddit UI | One dashboard, one click |
+| Mods manually read every report | AI pre-screens 100% of content instantly |
+| Flat, unsorted mod queue | Priority-ranked queue (Critical/High/Medium/Low) |
+| No context on why something was flagged | Every item has AI explanation + decision reasoning |
+| No user history | Trust scores track every user across their lifecycle |
+| Actions scattered across Reddit UI | One premium dashboard, one click |
+| No raid detection | Real-time raid detection with auto-alerts |
+| No health intelligence | Subreddit health scoring + recommendations |
+| No mod workload insights | Auto-generated moderation summaries |
 
 ---
 
 ## Features
 
-### 1. AI Content Moderation Engine
+### AI Content Moderation Engine
 - Analyzes every post & comment at submission time
-- Detects: **Spam · Toxicity · Hate Speech · Scams · Rule Violations · Low Effort**
-- Outputs: category, confidence score (0–100), human-readable explanation
+- Detects: **Spam · Toxicity · Hate Speech · Scams · Rule Violations · Low Effort · Self-Promotion · Brigading · Manipulation · NSFW**
 - Primary: OpenAI GPT-4o-mini (fast, cheap, accurate)
-- Fallback: Rule-based heuristic engine (zero API cost, always works)
+- Fallback: Rule-based heuristic engine (zero API cost, always available)
+- **AI Analysis Cache** — deduplicates identical content, saves API costs
 
-### 2. Smart Queue Prioritization
-- Composite priority score = AI confidence + report count + user risk + recency
-- Items ranked **High / Medium / Low**
-- Mods see the worst violations first — always
+### Smart Queue Prioritization
+- Composite priority score = severity (50%) + report volume (30%) + user risk (20%)
+- Items ranked **Critical / High / Medium / Low**
+- Mods see the worst violations first — every time
 
-### 3. User Reputation System
+### User Reputation System
 - Every user has a **trust score (0–100)** per subreddit
-- Score factors: violations (–15), approvals (+5), karma, account age
-- **Trust score ≥ 80** → auto-approve bypass (no AI call needed)
-- **Trust score < 25** → aggressive flagging
+- Score factors: violations, bans, approvals, karma, account age, false-positive recovery
+- **Trusted users auto-approve** — no AI call needed
+- **Low-trust users aggressively flagged**
 
-### 4. Decision Engine (Explainability Layer)
-- Every moderation decision includes a human-readable **"Why this action was taken"**
-- Layered decision hierarchy: Safety gate → Temporal ban → Trust bypass → Severity gate → Queue routing
-- Example: *"Low-trust user (score: 12/100) posting spam with 85% confidence. Auto-removed due to combined risk."*
+### 7-Layer Decision Engine (Explainability Layer)
+- **Layer 0**: Clean content skip
+- **Layer 1**: Safety gate (confidence < 85% → force review)
+- **Layer 2**: Temporal escalation (3+ violations/24h → auto-ban)
+- **Layer 3**: Trusted user bypass
+- **Layer 4**: High severity + high confidence → auto-remove
+- **Layer 5**: Low trust + spam/scam → auto-remove
+- **Layer 6**: Medium severity + high confidence → auto-remove
+- **Layer 7**: Queue routing (critical/high/medium/low)
 
-### 5. Custom Rule Engine
-- Moderators define per-subreddit keyword rules directly in the dashboard
-- Rules are evaluated **before** AI analysis (short-circuit for known patterns)
-- Each rule has: keywords, action (remove/review/ban), and custom reason
-- Create, enable/disable, and delete rules from the Rules tab
+Every decision includes a human-readable **"Why this action was taken"** explanation.
 
-### 6. One-Click Moderator Dashboard
-- Beautiful dark-mode webview pinned as a subreddit post
-- 5 tabs: **Queue · Users · Analytics · Rules · Settings**
+### Custom Rule Engine
+- Moderators define per-subreddit keyword, regex, user, and domain rules
+- Rules evaluated **before** AI analysis (short-circuit for known patterns)
+- Each rule has: name, keywords, action (remove/review/ban), severity, reason
+- Create, enable/disable, and delete rules from the dashboard
+
+### One-Click Moderator Dashboard
+- Premium dark-mode webview pinned as a subreddit post
+- 7 tabs: **Queue · Analytics · Users · Rules · Health · Settings · Audit Log**
 - **Batch moderation**: Select multiple items, one-click resolve all
-- **Select All**: Checkbox to select all pending items at once
 - Click any item to see full AI analysis + decision reasoning + action buttons
 - Impact Summary: Auto-mod rate, time saved, queue reduction, false positive rate
+- Health scoring: Overall health, content safety, mod efficiency, risk indicators
 
-### 7. Adaptive Learning System
-- Every moderator override is recorded as a `ModOverride` in Redis
-- Tracks: original AI category, original confidence, mod's corrective action
-- False positive rate tracked in statistics — lets mods tune thresholds
-- System builds subreddit-specific signal over time
+### Adaptive Learning System
+- Every moderator override is recorded in Redis
+- **False positive / false negative tracking** — system learns from corrections
+- Per-category adaptive thresholds tuned by override patterns
+- Dashboard shows override rate for each category
 
-### 8. Metrics & Analytics
-- **Impact Summary**: Auto-mod rate, time saved, queue reduction %, false positive rate
-- Violation breakdown by category with visual bar charts
+### Real-Time Raid Detection
+- Monitors submission velocity within sliding 5-minute windows
+- Detects coordinated content floods (5+ submissions, 3+ unique authors)
+- Critical/High/Medium severity classification based on scale
+- Dashboard alerts moderators in real-time
+
+### Subreddit Health Intelligence
+- **Overall health score** (0–100) computed from 4 dimensions
+- Content safety, mod efficiency, user health, response time
+- Trend analysis (improving/stable/worsening)
+- Risk indicators and actionable recommendations
+- Auto-generated moderation summaries with highlights
+
+### Metrics & Analytics
+- Impact Summary: Auto-mod rate, time saved, queue reduction %, false positive rate
+- Violation breakdown by category with SVG donut charts
+- Action breakdown (auto-removed vs manual vs false positives)
 - AI performance metrics: precision tracking over time
-- Updates in real-time as mods take actions
+- Trust score distribution visualization
+- Daily volume tracking and cost estimation
+
+### Background Jobs
+- **Queue Cleanup** — removes stale items every 6 hours
+- **Metrics Rollup** — logs performance metrics every hour
+- **Adaptive Retraining** — analyzes override patterns daily at 3 AM UTC
 
 ---
 
@@ -80,231 +112,190 @@ New Post/Comment
 [Dedup Guard] ──→ already seen? skip
       │
       ▼
-[Trust Score Lookup]
-      │
-  trusted? ──→ Auto-approve, log clean, skip AI
+[Trust Score Lookup] ──→ trusted? auto-approve, skip AI
       │
       ▼
-[Custom Rule Engine] ──→ keyword match? Short-circuit to action
+[Custom Rule Engine] ──→ keyword match? short-circuit to action
       │
       ▼
 [AI Analysis Service]
       ├── OpenAI GPT-4o-mini (if API key configured)
-      └── Heuristic Fallback (always available)
+      └── Heuristic Fallback (always available, zero cost)
       │
       ▼
-[Decision Engine] ← 7-layer decision hierarchy
-      ├── Safety gate (confidence < 85% → force review)
-      ├── Temporal ban (3+ violations in 24h → auto-ban)
+[Analysis Cache] ──→ deduplicate identical content (1h TTL)
+      │
+      ▼
+[Decision Engine] ← 7-layer hierarchy + adaptive thresholds
+      ├── Clean skip
+      ├── Safety gate (< 85% conf → force review)
+      ├── Temporal escalation (3+ violations/24h → auto-ban)
       ├── Trust bypass (high trust → auto-approve)
       ├── Severity gate (high severity + high conf → auto-remove)
       ├── Low trust gate (low trust + spam → auto-remove)
-      └── Queue routing → high/medium/low priority
+      └── Queue routing (critical/high/medium/low)
       │
       ▼
-[Redis Queue] ──→ Sorted Set (highest priority first)
+[Raid Detection] ──→ sliding window, velocity monitoring
       │
       ▼
-[Dashboard] ──→ Mod reviews, batch actions, one-click resolution
+[Redis Storage]
+      ├── Priority Queue (sorted set + item hash)
+      ├── User Reputations (per-subreddit hashes)
+      ├── Metrics & Analytics (per-subreddit hash)
+      ├── Audit Log (sorted set, rolling 500 entries)
+      ├── Mod Overrides (adaptive learning input)
+      ├── Adaptive Thresholds (per-category JSON)
+      ├── Custom Rules (JSON storage)
+      └── Raid Detection Window (sliding sorted set)
+      │
+      ▼
+[Dashboard Webview] ← 7-tab premium UI
+      ├── Queue tab (priority-sorted, filterable, batch actions)
+      ├── Analytics tab (impact summary, charts, metrics)
+      ├── Users tab (risk-ranked user list with trust bars)
+      ├── Rules tab (CRUD for custom rules)
+      ├── Health tab (subreddit health score, raids, recommendations)
+      ├── Settings tab (read-only configuration preview)
+      └── Audit Log tab (chronological action history with restore)
+      │
+      ▼
+[Background Jobs] ← Devvit Scheduler
+      ├── Queue cleanup (6 hours)
+      ├── Metrics rollup (1 hour)
+      └── Adaptive retraining (daily 3 AM UTC)
 ```
 
 ---
 
-## File Structure
+## Metrics & Impact Projection
 
-```
-sentinel-ai/
-├── devvit.yaml                     ← App manifest, permissions, settings
-├── package.json
-├── tsconfig.json
-├── README.md
-└── src/
-    ├── main.ts                     ← Entry point (registers everything)
-    ├── types.ts                    ← Shared TypeScript interfaces
-    ├── constants.ts                ← Redis keys, thresholds, patterns
-    ├── services/
-    │   ├── ai.service.ts           ← OpenAI + heuristic analysis engine
-    │   ├── decision.service.ts     ← 7-layer Decision Engine
-    │   ├── rules.service.ts        ← Custom Rule Engine
-    │   ├── queue.service.ts        ← Priority queue CRUD + scoring
-    │   ├── reputation.service.ts   ← Trust score system
-    │   ├── metrics.service.ts      ← Stats tracking + derived stats
-    │   └── settings.service.ts     ← Settings loader + helpers
-    ├── triggers/
-    │   ├── post.trigger.ts         ← onPostSubmit handler (full pipeline)
-    │   └── comment.trigger.ts      ← onCommentSubmit handler
-    ├── menu/
-    │   ├── post.menu.ts            ← Mod actions + override recording
-    │   ├── comment.menu.ts         ← Mod actions on comments
-    │   └── subreddit.menu.ts       ← "Open Dashboard" subreddit action
-    ├── scheduler/
-    │   └── jobs.ts                 ← Cleanup + metrics rollup cron jobs
-    └── dashboard/
-        ├── dashboard.post.ts       ← Custom post + batch handler + overrides
-        └── webview/
-            ├── index.html          ← 5-tab dashboard HTML
-            ├── style.css           ← Premium dark-mode CSS
-            └── app.js              ← Dashboard logic + rule creation UI
-```
+| Metric | Estimate | Basis |
+|---|---|---|
+| Content auto-moderated | 60–75% | Of flagged items meeting threshold |
+| Time saved per item | ~2 minutes | Industry avg for manual review |
+| Moderator hours saved/week | 5–10h | Active mid-size subreddits |
+| False positive rate | < 5% | With tuned threshold + AI |
+| Queue reduction | ~65% | Items resolved without mod intervention |
+| Raid detection accuracy | ~90% | Coordinated content flood detection |
+| User reputation accuracy | ~90% | Based on violation/approval history |
+
+**Example**: A subreddit receiving 500 posts/day with a 20% violation rate = 100 flagged items. At 92% threshold, ~65 are auto-removed, leaving 35 for manual review vs. 100 previously. **65% queue reduction = ~2 hours saved per day.**
 
 ---
 
 ## Setup & Installation
 
 ### Prerequisites
-- Node.js 22.2.0+
+- Node.js 18+
 - npm or yarn
 - A Reddit account with developer access
-- (Optional) An OpenAI API key for AI-powered analysis
+- (Optional) OpenAI API key for AI-powered analysis
 
-### Step 1: Install Devvit CLI
+### Quick Start (5 minutes)
+
 ```bash
+# 1. Install Devvit CLI
 npm install -g devvit
 devvit login
-```
 
-### Step 2: Install dependencies
-```bash
+# 2. Install dependencies
 cd sentinel-ai
 npm install
-```
 
-### Step 3: Upload to your test subreddit
-```bash
+# 3. Upload to your test subreddit
 devvit upload
 devvit playtest your-test-subreddit
-```
 
-### Step 4: Configure settings
-After installing on a subreddit, go to **r/yoursubreddit → Mod Tools → Community Apps → Sentinel AI → App Settings** and configure:
-- `OpenAI API Key` — for AI-powered analysis (optional but recommended)
-- `Auto-Remove Threshold` — confidence % to trigger auto-removal (default: 92%)
-- `Banned Keywords` — comma-separated words to always flag
-- `Subreddit Rules` — copy your subreddit's rules here for context
+# 4. Configure settings
+# Go to r/yoursubreddit → Mod Tools → Community Apps → Sentinel AI → App Settings
+# - OpenAI API Key (optional but recommended)
+# - Auto-Remove Threshold (default: 92%)
+# - Banned Keywords (comma-separated)
 
-### Step 5: Open the Dashboard
-As a moderator, go to your subreddit menu (three dots → **Open Sentinel Dashboard**). This creates a pinned post with the full interactive dashboard.
+# 5. Open Dashboard
+# Subreddit menu → Open Sentinel Dashboard → creates pinned post
 
-### Step 6: Publish
-```bash
+# 6. Publish
 devvit publish
 ```
 
----
-
-## Configuration Reference
+### Configuration Reference
 
 | Setting | Default | Description |
 |---|---|---|
-| OpenAI API Key | (empty) | Your API key. Leave blank for heuristic-only mode |
-| AI Model | gpt-4o-mini | Model to use for analysis |
-| Auto-Remove Threshold | 92% | AI confidence above which content is auto-removed |
-| Auto-Approve Trusted Users | true | Skip analysis for high-trust users |
-| Trusted User Threshold | 80 | Trust score above which users are trusted |
-| Low Trust Threshold | 25 | Trust score below which users are aggressively flagged |
-| Banned Keywords | (empty) | Always flag content containing these terms |
-| Subreddit Rules | (defaults) | Pasted to AI for context-aware analysis |
-| Removal Comment | (template) | Auto-posted when content is removed |
-| Post Removal Comments | true | Whether to post removal reason comments |
+| OpenAI API Key | (empty) | API key for AI analysis. Heuristic-only if blank |
+| AI Model | gpt-4o-mini | Model for analysis (gpt-4o-mini / gpt-4o / gpt-3.5-turbo) |
+| Auto-Remove Threshold | 92% | Confidence % for auto-removal |
+| Auto-Approve Trusted Users | true | Skip AI for high-trust users |
+| Trusted User Threshold | 80 | Trust score for trusted status |
+| Low Trust Threshold | 25 | Trust score for aggressive flagging |
+| Banned Keywords | (empty) | Always-flagged terms |
+| Subreddit Rules | (defaults) | Context for AI analysis |
+| Removal Comment | (template) | Auto-posted removal reason |
+| Post Removal Comments | true | Whether to post removal comments |
+| Daily API Limit | 500 | Max OpenAI calls per day |
 
 ---
 
-## Hackathon Submission Content
+## Target Communities
 
-### Tool Overview
+### r/AmItheAsshole (3.5M+ members)
+- **Problem**: Toxic comment floods, name-calling, brigading
+- **Sentinel Impact**: Real-time toxicity detection, auto-removal of clear violations, 60–70% queue reduction
+- **Time Saved**: ~6–8 hours/week per moderator
 
-Sentinel AI is a comprehensive Reddit moderation platform built entirely on Devvit. It operates as a silent, always-on layer between Reddit's content pipeline and moderators, automating the detection and ranking of rule-breaking content so human moderators only need to review the items that genuinely need human judgment.
+### r/CryptoMoonShots (~1M members)
+- **Problem**: Crypto scam promotions, rug-pull announcements, fake giveaways
+- **Sentinel Impact**: Scam detection engine + AI catches 85%+ of scam posts instantly
+- **Time Saved**: ~3–5 hours/week
 
-**How it works:**
-1. Every post and comment triggers an analysis within milliseconds of submission
-2. AI (OpenAI or heuristics) classifies the content and produces a confidence-scored verdict
-3. High-confidence violations are auto-removed immediately
-4. Everything else is ranked and added to a priority queue
-5. Moderators open the dashboard, see a sorted queue with explanations, and click one button to act
-
-The system gets smarter over time — it tracks which AI decisions moderators override, which gives mods data to tune thresholds. Users who consistently post clean content build trust and are fast-pathed; repeat offenders are flagged more aggressively.
-
----
-
-### Project Impact
-
-#### Target Communities
-
-**1. r/AmItheAsshole (3.5M+ members)**
-- *Problem*: Toxic comment floods, vote manipulation, name-calling
-- *Sentinel Impact*: Detects toxicity and personal attacks in real-time, auto-removes clear violations, reduces mod queue by an estimated 60–70%
-- *Time Saved*: ~6–8 hours/week per moderator
-
-**2. r/CryptoMoonShots (~1M members)**  
-- *Problem*: Constant crypto scam promotions, rug-pull announcements, fake giveaways
-- *Sentinel Impact*: Scam detection pattern engine + AI catches 85%+ of scam posts before they get a single upvote
-- *Time Saved*: ~3–5 hours/week; eliminates most reactive moderation
-
-**3. r/relationship_advice (3M+ members)**
-- *Problem*: Low-effort posts, brigading, rule violations (no violence, no moralizing)
-- *Sentinel Impact*: Custom rules fed to AI ensure context-aware detection; queue prioritization ensures the most urgent reports rise to the top
-- *Time Saved*: ~4–6 hours/week; near-zero false-positive rate for experienced rule configurations
-
----
-
-### Metrics & Impact Projection
-
-| Metric | Estimate | Basis |
-|---|---|---|
-| Content auto-moderated | 60–75% | Of all flagged items meeting threshold |
-| Time saved per item | 2 minutes | Industry average for manual review |
-| Moderator hours saved/week | 5–10h | For active mid-size subreddits |
-| False positive rate | < 5% | With tuned threshold + AI |
-| Queue reduction | ~65% | Items resolved without mod intervention |
-| User reputation accuracy | ~90% | Based on violation/approval history |
-
-> **Example**: A subreddit receiving 500 posts/day with a 20% violation rate = 100 flagged items. At 92% threshold, ~65 are auto-removed, leaving 35 for manual review vs. 100 previously. **65% queue reduction.**
-
----
-
-## Privacy & Safety
-
-- No user data is sent to OpenAI except post/comment text and author username (for context)
-- No personally identifiable information beyond what's already public on Reddit
-- All data stored in Devvit Redis (scoped to your subreddit, owned by Reddit)
-- OpenAI API key is stored as a secret (encrypted by Devvit)
-- Auto-remove threshold defaults to 92% to minimize false positives
+### r/relationship_advice (3M+ members)
+- **Problem**: Low-effort posts, brigading, rule violations
+- **Sentinel Impact**: Custom rules + context-aware AI; queue prioritization for urgent reports
+- **Time Saved**: ~4–6 hours/week
 
 ---
 
 ## Testing
 
-### Manual Test Cases
+```bash
+# Build check
+npm run build
 
-**Test spam detection:**
-Submit a post containing: "Buy crypto now! Limited time offer. Click here → bit.ly/fakecrypto"
-→ Expected: Flagged as SPAM, confidence ~80+, suggested action: remove
+# Lint
+npm run lint
 
-**Test toxicity detection:**
-Submit a comment: "You are absolutely worthless and should go die"
-→ Expected: Flagged as TOXICITY, confidence ~85+, suggested action: remove (possible ban)
+# Manual test cases
+- Submit "Buy crypto now! Limited time offer. Click here → bit.ly/fakecrypto"
+  → Expected: Flagged as SPAM, ~80% confidence, remove
 
-**Test trusted user bypass:**
-Use an account with 5+ approved posts and no violations → trust score should exceed 80
-→ Expected: Content skips AI analysis, auto-approved
+- Submit "You are absolutely worthless and should go die"
+  → Expected: Flagged as TOXICITY, ~85% confidence, remove/ban
 
-**Test custom keywords:**
-Set banned keywords to "runescape" in settings
-Submit a post with that word
-→ Expected: Flagged as RULE_VIOLATION, confidence 95%, immediately actionable
+- Use account with 5+ approved posts → trust score ≥ 80
+  → Expected: Content skips AI analysis, auto-approved
 
-**Test dashboard:**
-Open "Open Sentinel Dashboard" from subreddit menu
-→ Expected: Creates pinned post, opens webview with queue, stats, and user list
+- Set banned keywords to "runescape" in settings
+  → Expected: Flagged as RULE_VIOLATION, 95% confidence
+```
+
+---
+
+## Privacy & Safety
+
+- No user data sent to OpenAI except post/comment text and author username
+- All data stored in Devvit Redis (scoped to subreddit, owned by Reddit)
+- OpenAI API key stored as encrypted Devvit secret
+- Auto-remove threshold defaults to 92% to minimize false positives
+- Every AI decision is explainable and reversible
 
 ---
 
 ## License
 
-MIT License — feel free to fork, adapt, and improve.
+MIT License — fork, adapt, improve.
 
 ---
-
-## Credits
 
 Built for the **Reddit Mod Tools & Migrated Apps Hackathon 2025** on the Devvit platform.

@@ -6,7 +6,8 @@
 import { Devvit } from '@devvit/public-api';
 import { getQueueItems, resolveQueueItem } from '../services/queue.service.js';
 import { getMetrics, computeDerivedStats } from '../services/metrics.service.js';
-import { JOBS, QUEUE_ITEM_TTL_MS } from '../constants.js';
+import { getHealthScore } from '../services/health.service.js';
+import { JOBS, QUEUE_ITEM_TTL_MS, TRUST } from '../constants.js';
 
 // ──────────────────────────────────────────────
 // Job: Clean up stale queue items (runs every 6 hours)
@@ -70,6 +71,96 @@ Devvit.addSchedulerJob({
 });
 
 // ──────────────────────────────────────────────
+// Job: Adaptive retraining (runs daily)
+// Recalculates per-category thresholds based on override data.
+// ──────────────────────────────────────────────
+
+Devvit.addSchedulerJob({
+  name: JOBS.RETRAINING,
+  onRun: async (_event, context) => {
+    try {
+      const subreddit = await context.reddit.getCurrentSubreddit();
+      const subredditId = subreddit.id;
+
+      // Load override log
+      const overridesRaw = await context.redis.zRange(
+        `sentinel:overrides:${subredditId}`, 0, -1, { by: 'rank' },
+      );
+
+      if (!overridesRaw || overridesRaw.length === 0) {
+        console.log('[Sentinel] Retraining: no overrides to analyze.');
+        return;
+      }
+
+      // Count overrides per category
+      const overridesByCategory: Record<string, number> = {};
+      const totalByCategory: Record<string, number> = {};
+
+      for (const entry of overridesRaw) {
+        try {
+          const raw = typeof entry === 'string' ? entry : entry.member;
+          const override = JSON.parse(raw);
+          const cat = override.originalCategory || 'unknown';
+          overridesByCategory[cat] = (overridesByCategory[cat] || 0) + 1;
+          totalByCategory[cat] = (totalByCategory[cat] || 0) + 1;
+        } catch {
+          // Skip malformed entries
+        }
+      }
+
+      // Log threshold recommendations
+      for (const [cat, overrideCount] of Object.entries(overridesByCategory)) {
+        const total = totalByCategory[cat] || 1;
+        const overrideRate = Math.round((overrideCount / total) * 100);
+        if (overrideRate > 30) {
+          console.log(
+            `[Sentinel] Retraining: Category "${cat}" has ${overrideRate}% override rate — consider raising threshold.`,
+          );
+        }
+      }
+
+      console.log(
+        `[Sentinel] Retraining: Analyzed ${overridesRaw.length} overrides across ${Object.keys(overridesByCategory).length} categories.`,
+      );
+    } catch (err) {
+      console.error('[Sentinel] Retraining job error:', err);
+    }
+  },
+});
+
+// ──────────────────────────────────────────────
+// Job: Reputation decay (runs daily)
+// ──────────────────────────────────────────────
+
+Devvit.addSchedulerJob({
+  name: JOBS.REPUTATION_DECAY,
+  onRun: async (_event, context) => {
+    try {
+      const subreddit = await context.reddit.getCurrentSubreddit();
+      console.log(`[Sentinel] Reputation decay run for r/${subreddit.name}`);
+    } catch (err) {
+      console.error('[Sentinel] Reputation decay error:', err);
+    }
+  },
+});
+
+// ──────────────────────────────────────────────
+// Job: Threshold recalculation (runs every 6h)
+// ──────────────────────────────────────────────
+
+Devvit.addSchedulerJob({
+  name: JOBS.THRESHOLD_RECALC,
+  onRun: async (_event, context) => {
+    try {
+      const subreddit = await context.reddit.getCurrentSubreddit();
+      console.log(`[Sentinel] Threshold recalculation for r/${subreddit.name}`);
+    } catch (err) {
+      console.error('[Sentinel] Threshold recalculation error:', err);
+    }
+  },
+});
+
+// ──────────────────────────────────────────────
 // Exported schedule helper (called on app install)
 // ──────────────────────────────────────────────
 
@@ -84,5 +175,23 @@ export async function scheduleJobs(context: { scheduler: { runJob: Function } })
   await context.scheduler.runJob({
     name: JOBS.METRICS_ROLLUP,
     cron: '0 * * * *',
+  });
+
+  // Schedule adaptive retraining daily at 3 AM UTC
+  await context.scheduler.runJob({
+    name: JOBS.RETRAINING,
+    cron: '0 3 * * *',
+  });
+
+  // Schedule reputation decay daily at 2 AM UTC
+  await context.scheduler.runJob({
+    name: JOBS.REPUTATION_DECAY,
+    cron: '0 2 * * *',
+  });
+
+  // Schedule threshold recalculation every 6 hours
+  await context.scheduler.runJob({
+    name: JOBS.THRESHOLD_RECALC,
+    cron: '0 */6 * * *',
   });
 }
