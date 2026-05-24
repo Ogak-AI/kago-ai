@@ -21,8 +21,10 @@ import { recordApproval, recordViolation } from '../services/reputation.service.
 import { loadSettings } from '../services/settings.service.js';
 import { loadCustomRules, saveCustomRules } from '../services/rules.service.js';
 import { recordAuditEntry, buildAuditEntry, getAuditLog } from '../services/audit.service.js';
+import { computeHealthScore, getHealthScore } from '../services/health.service.js';
+import { getActiveRaidAlert } from '../services/raid.service.js';
+import { generateModerationSummary } from '../services/summarizer.service.js';
 import { Keys, MAX_OVERRIDE_LOG } from '../constants.js';
-import type { HealthScorePayload, RaidAlertPayload, ModSummaryPayload } from '../types.js';
 
 
 // ──────────────────────────────────────────────
@@ -101,6 +103,13 @@ async function loadDashboardData(context: Context): Promise<InitDataPayload> {
   // Compute derived stats
   const derived = computeDerivedStats(metrics);
 
+  // Health score, raid alert, moderation summary
+  const [healthScore, raidAlert, moderationSummary] = await Promise.all([
+    computeHealthScore(context.redis, subredditId, metrics, queueItems, topUsers),
+    getActiveRaidAlert(context.redis, subredditId),
+    generateModerationSummary(context.redis, subredditId, metrics, auditLog),
+  ]);
+
   // Rate limit info
   let rateLimitInfo = undefined;
   try {
@@ -146,6 +155,9 @@ async function loadDashboardData(context: Context): Promise<InitDataPayload> {
     auditLog,
     rateLimitInfo,
     aiModeStatus,
+    healthScore,
+    raidAlert: raidAlert ?? undefined,
+    moderationSummary,
   };
 }
 

@@ -103,7 +103,6 @@ async function callOpenAI(
         temperature: AI_TEMPERATURE,
         response_format: { type: 'json_object' },
       }),
-      // @ts-expect-error – Devvit fetch supports AbortSignal
       signal: controller.signal,
     });
 

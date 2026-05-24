@@ -86,7 +86,8 @@ void SentinelDashboardPost;
 /** On first install: schedule background jobs and greet mods */
 Devvit.addTrigger({
   event: 'AppInstall',
-  onEvent: async (_event, context) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEvent: async (_event: any, context: any) => {
     console.log('[Sentinel] App installed — scheduling background jobs…');
     try {
       await scheduleJobs(context);
@@ -100,7 +101,8 @@ Devvit.addTrigger({
 /** On upgrade: reschedule jobs in case of job-name changes */
 Devvit.addTrigger({
   event: 'AppUpgrade',
-  onEvent: async (_event, context) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEvent: async (_event: any, context: any) => {
     console.log('[Sentinel] App upgraded — rescheduling background jobs…');
     try {
       await scheduleJobs(context);

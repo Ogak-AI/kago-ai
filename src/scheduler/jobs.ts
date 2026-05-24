@@ -131,7 +131,8 @@ Devvit.addSchedulerJob({
 // Exported schedule helper (called on app install)
 // ──────────────────────────────────────────────
 
-export async function scheduleJobs(context: { scheduler: { runJob: (opts: Record<string, unknown>) => Promise<void> } }): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function scheduleJobs(context: any): Promise<void> {
   // Schedule cleanup every 6 hours
   await context.scheduler.runJob({
     name: JOBS.CLEANUP_QUEUE,
