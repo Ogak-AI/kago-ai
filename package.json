@@ -1,6 +1,6 @@
 {
   "name": "kago-ai",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Kago AI: The Moderation Operating System for Reddit — AI-powered, Devvit-native",
   "private": true,
   "type": "module",
@@ -20,7 +20,7 @@
     "test:ai": "tsx src/tests/ai.test.ts"
   },
   "dependencies": {
-    "@devvit/public-api": "0.11.5"
+    "@devvit/public-api": "0.12.9"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.0.0",
@@ -28,5 +28,6 @@
     "eslint": "^8.0.0",
     "tsx": "^4.22.3",
     "typescript": "^5.3.3"
-  }
+  },
+  "license": "BSD-3-Clause"
 }

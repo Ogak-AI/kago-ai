@@ -1,101 +1,98 @@
-name: kago-ai-modtool
+name: kago-ai
 version: 1.0.0
-description: "Kago AI: Smart Moderation & Queue Prioritization Engine"
-
-# Runtime permissions
+description: 'Kago AI: Smart Moderation & Queue Prioritization Engine'
 permissions:
   - reddit
   - http
   - redis
   - scheduler
   - modLog
-
-# HTTP allowlist (must whitelist all external domains)
 httpAllowlist:
-  - "https://api.openai.com"
-
-# App settings (configurable by installing moderators)
+  - https://api.openai.com
 settings:
   - name: openaiApiKey
-    label: "OpenAI API Key"
-    description: "Your OpenAI API key for AI-powered content analysis. Leave blank to use rule-based fallback."
+    label: OpenAI API Key
+    description: >-
+      Your OpenAI API key for AI-powered content analysis. Leave blank to use
+      rule-based fallback.
     type: string
     isSecret: true
     required: false
-
   - name: aiModel
-    label: "AI Model"
-    description: "OpenAI model to use. gpt-4o-mini is recommended (fast + cheap)."
+    label: AI Model
+    description: OpenAI model to use. gpt-4o-mini is recommended (fast + cheap).
     type: select
     options:
-      - label: "GPT-4o Mini (Recommended)"
-        value: "gpt-4o-mini"
-      - label: "GPT-4o"
-        value: "gpt-4o"
-      - label: "GPT-3.5 Turbo"
-        value: "gpt-3.5-turbo"
-    defaultValue: "gpt-4o-mini"
+      - label: GPT-4o Mini (Recommended)
+        value: gpt-4o-mini
+      - label: GPT-4o
+        value: gpt-4o
+      - label: GPT-3.5 Turbo
+        value: gpt-3.5-turbo
+    defaultValue: gpt-4o-mini
     required: false
-
   - name: autoRemoveThreshold
-    label: "Auto-Remove Confidence Threshold (%)"
-    description: "Posts/comments with AI confidence above this threshold are automatically removed. Set to 100 to disable auto-removal. Min: 75, Max: 99."
+    label: Auto-Remove Confidence Threshold (%)
+    description: >-
+      Posts/comments with AI confidence above this threshold are automatically
+      removed. Set to 100 to disable auto-removal. Min: 75, Max: 99.
     type: number
     defaultValue: 92
     required: false
-
   - name: dailyApiLimit
-    label: "Daily OpenAI Call Limit"
-    description: "Maximum OpenAI API calls per day. Falls back to heuristic mode when exceeded. Default: 500."
+    label: Daily OpenAI Call Limit
+    description: >-
+      Maximum OpenAI API calls per day. Falls back to heuristic mode when
+      exceeded. Default: 500.
     type: number
     defaultValue: 500
     required: false
-
   - name: autoApproveTrustedUsers
-    label: "Auto-Approve Trusted Users"
-    description: "Skip AI analysis for users with a trust score above 80. Reduces API calls."
+    label: Auto-Approve Trusted Users
+    description: Skip AI analysis for users with a trust score above 80. Reduces API calls.
     type: boolean
     defaultValue: true
     required: false
-
   - name: trustedUserThreshold
-    label: "Trusted User Score Threshold"
-    description: "Trust score (0-100) above which a user is considered trusted."
+    label: Trusted User Score Threshold
+    description: Trust score (0-100) above which a user is considered trusted.
     type: number
     defaultValue: 80
     required: false
-
   - name: bannedKeywords
-    label: "Banned Keywords (comma-separated)"
-    description: "Always flag content containing these words, regardless of AI score."
+    label: Banned Keywords (comma-separated)
+    description: Always flag content containing these words, regardless of AI score.
     type: string
-    defaultValue: ""
+    defaultValue: ''
     required: false
-
   - name: subredditRules
-    label: "Subreddit Rules (one per line)"
-    description: "List your subreddit rules here. Kago uses these to give context to the AI."
+    label: Subreddit Rules (one per line)
+    description: List your subreddit rules here. Kago uses these to give context to the AI.
     type: paragraph
-    defaultValue: "1. Be respectful\n2. No spam\n3. No self-promotion\n4. Stay on topic"
+    defaultValue: |-
+      1. Be respectful
+      2. No spam
+      3. No self-promotion
+      4. Stay on topic
     required: false
-
   - name: removalComment
-    label: "Auto-Removal Comment Template"
-    description: "Posted when content is auto-removed. Use {reason} as placeholder."
+    label: Auto-Removal Comment Template
+    description: Posted when content is auto-removed. Use {reason} as placeholder.
     type: paragraph
-    defaultValue: "Your post/comment was automatically removed by Kago AI for the following reason: {reason}. If you believe this was a mistake, please message the moderators."
+    defaultValue: >-
+      Your post/comment was automatically removed by Kago AI for the following
+      reason: {reason}. If you believe this was a mistake, please message the
+      moderators.
     required: false
-
   - name: enableRemovalComments
-    label: "Post Removal Reason Comments"
-    description: "Post a comment explaining the removal when content is auto-removed."
+    label: Post Removal Reason Comments
+    description: Post a comment explaining the removal when content is auto-removed.
     type: boolean
     defaultValue: true
     required: false
-
   - name: lowTrustThreshold
-    label: "Low Trust Score Threshold"
-    description: "Trust score (0-100) below which a user is aggressively flagged."
+    label: Low Trust Score Threshold
+    description: Trust score (0-100) below which a user is aggressively flagged.
     type: number
     defaultValue: 25
     required: false
