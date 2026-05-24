@@ -312,11 +312,12 @@ export async function getQueueItem(
 export async function getQueueStats(
   redis: RedisClient,
   subredditId: string,
-): Promise<{ total: number; high: number; medium: number; low: number }> {
+): Promise<{ total: number; critical: number; high: number; medium: number; low: number }> {
   const items = await getQueueItems(redis, subredditId, MAX_QUEUE_SIZE, 'pending');
-  const stats = { total: items.length, high: 0, medium: 0, low: 0 };
+  const stats: { total: number; critical: number; high: number; medium: number; low: number } = { total: items.length, critical: 0, high: 0, medium: 0, low: 0 };
   for (const item of items) {
-    stats[item.priorityLevel]++;
+    const level = item.priorityLevel as keyof typeof stats;
+    if (level in stats) stats[level]++;
   }
   return stats;
 }

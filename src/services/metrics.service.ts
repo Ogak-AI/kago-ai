@@ -120,7 +120,7 @@ export async function recordScan(
 
   const field = catMap[category];
   if (field) {
-    (m as Record<string, unknown>)[field] = ((m as Record<string, unknown>)[field] as number) + 1;
+    (m as unknown as Record<string, number>)[field] = ((m as unknown as Record<string, number>)[field] || 0) + 1;
   }
 
   await redis.hSet(Keys.metrics(subredditId), serializeMetrics(m));

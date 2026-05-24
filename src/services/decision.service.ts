@@ -98,8 +98,15 @@ export async function countRecentViolations(
   const cutoff = Date.now() - VIOLATION_WINDOW_MS;
 
   // Count members with score > cutoff (i.e. within last 24h)
-  const count = await redis.zCount(key, cutoff, '+inf');
-  return count ?? 0;
+  const members = await redis.zRange(key, 0, -1, { by: 'rank' });
+  if (!members) return 0;
+  let count = 0;
+  for (const m of members) {
+    const entry = m as { member: string; score: number };
+    const score = typeof entry === 'string' ? 0 : entry.score;
+    if (score > cutoff) count++;
+  }
+  return count;
 }
 
 // ──────────────────────────────────────────────

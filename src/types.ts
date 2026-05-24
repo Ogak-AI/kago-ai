@@ -57,30 +57,19 @@ export type RuleType = 'keyword' | 'regex' | 'user' | 'domain';
 export interface SubredditRule {
   id: string;
   name: string;
-  type: RuleType;
-  /** Keywords that trigger this rule (case-insensitive, any match) */
+  type?: RuleType;
   keywords: string[];
-  /** Regex patterns (only used when type === 'regex') */
   regexPatterns?: string[];
-  /** Usernames (only used when type === 'user') */
   targetUsers?: string[];
-  /** Blocked domains (only used when type === 'domain') */
   blockedDomains?: string[];
-  /** Confidence threshold (0–100) above which the action fires automatically */
   threshold: number;
-  /** What to do when this rule fires */
   action: 'remove' | 'review' | 'ban';
-  /** Severity assigned to matches */
-  severity: Severity;
-  /** Explanation shown to mods and in removal comments */
+  severity?: Severity;
   reason: string;
   enabled: boolean;
-  /** Evaluation priority (lower = evaluated first) */
-  priority: number;
-  /** How many times this rule has been triggered */
-  hitCount: number;
-  /** When this rule was created */
-  createdAt: number;
+  priority?: number;
+  hitCount?: number;
+  createdAt?: number;
 }
 
 // ──────────────────────────────────────────────
@@ -108,11 +97,11 @@ export interface DecisionResult {
   /** Which rule triggered this (if custom rule engine) */
   triggeredRule?: string;
   /** Which decision layer made this call */
-  decisionLayer: string;
+  decisionLayer?: string;
   /** Confidence score from analysis */
-  confidence: number;
+  confidence?: number;
   /** Recommended next step for moderator */
-  recommendedNextStep: string;
+  recommendedNextStep?: string;
 }
 
 // ──────────────────────────────────────────────
@@ -175,7 +164,7 @@ export interface FlaggedItem {
   // Queue
   priorityScore: number; // 0–100 composite score used in sorted set
   priorityLevel: PriorityLevel;
-  reportCount: number;
+  reportCount?: number;
 
   // Status
   status: ItemStatus;
@@ -192,31 +181,20 @@ export interface UserReputation {
   userId: string;
   username: string;
   subredditId: string;
-  /** 0 = completely untrusted, 100 = fully trusted */
   trustScore: number;
-  /** Computed risk level */
-  riskLevel: RiskLevel;
-  /** Computed reputation tier */
-  tier: ReputationTier;
+  riskLevel?: RiskLevel;
+  tier?: ReputationTier;
   violations: number;
   approvals: number;
-  /** Total bans recorded */
-  bans: number;
-  /** Spam incidents */
-  spamCount: number;
-  /** Account age at time of last update, in days */
+  bans?: number;
+  spamCount?: number;
   accountAgeDays: number;
-  /** Reddit karma at time of last update */
   karma: number;
-  /** Approval ratio = approvals / (approvals + violations) */
-  approvalRatio: number;
-  /** Violations in the last 24 hours (for temporal escalation) */
-  recentViolations24h: number;
-  /** Timestamp of the most recent violation */
+  approvalRatio?: number;
+  recentViolations24h?: number;
   lastViolationAt?: number;
-  /** Moderator override count (times mods disagreed with AI about this user) */
-  overrideCount: number;
-  lastUpdated: number; // epoch ms
+  overrideCount?: number;
+  lastUpdated: number;
 }
 
 // ──────────────────────────────────────────────
@@ -227,14 +205,12 @@ export interface ModOverride {
   itemId: string;
   originalCategory: ViolationCategory;
   originalConfidence: number;
-  originalAction: SuggestedAction;
+  originalAction?: SuggestedAction;
   modAction: ItemStatus;
   modUsername: string;
   timestamp: number;
-  /** Whether this was a false positive (AI flagged, mod approved) */
-  isFalsePositive: boolean;
-  /** Whether this was a false negative (AI approved, mod removed) */
-  isFalseNegative: boolean;
+  isFalsePositive?: boolean;
+  isFalseNegative?: boolean;
 }
 
 // ──────────────────────────────────────────────
@@ -242,7 +218,7 @@ export interface ModOverride {
 // ──────────────────────────────────────────────
 
 export interface AuditEntry {
-  id: string;
+  id?: string;
   timestamp: number;
   actionType: 'auto_remove' | 'auto_approve' | 'auto_ban' | 'manual_remove' | 'manual_approve' | 'manual_ban' | 'manual_ignore' | 'batch' | 'restore' | 'rule_update';
   contentId: string;
@@ -251,13 +227,11 @@ export interface AuditEntry {
   authorName: string;
   aiCategory: string;
   aiConfidence: number;
-  severity: Severity;
-  triggeredBy: string; // 'ai_auto' | 'rule_engine' | 'moderator:{username}'
+  severity?: Severity;
+  triggeredBy: string;
   reason: string;
-  /** Can this action be undone? */
-  reversible: boolean;
-  /** Has this action been reversed? */
-  reversed: boolean;
+  reversible?: boolean;
+  reversed?: boolean;
 }
 
 // ──────────────────────────────────────────────
@@ -301,7 +275,7 @@ export interface SentinelSettings {
   openaiApiKey: string;
   aiModel: string;
   autoRemoveThreshold: number;
-  dailyApiLimit: number;
+  dailyApiLimit?: number;
   autoApproveTrustedUsers: boolean;
   trustedUserThreshold: number;
   lowTrustThreshold: number;

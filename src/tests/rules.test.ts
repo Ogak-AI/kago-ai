@@ -55,7 +55,7 @@ function evaluateRulesLocal(
   // Sort by priority (lower = evaluated first)
   const sorted = [...rules]
     .filter(r => r.enabled)
-    .sort((a, b) => a.priority - b.priority);
+    .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
 
   for (const rule of sorted) {
     let matched = false;

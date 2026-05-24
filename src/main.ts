@@ -43,13 +43,15 @@ Devvit.configure({
 /** Fires on every new post submitted to the subreddit */
 Devvit.addTrigger({
   event: 'PostSubmit',
-  onEvent: handlePostSubmit,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEvent: handlePostSubmit as any,
 });
 
 /** Fires on every new comment submitted */
 Devvit.addTrigger({
   event: 'CommentSubmit',
-  onEvent: handleCommentSubmit,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEvent: handleCommentSubmit as any,
 });
 
 // ──────────────────────────────────────────────────────────
