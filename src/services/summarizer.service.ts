@@ -1,6 +1,5 @@
 import type { RedisClient } from '@devvit/public-api';
 import type { AuditEntry, SentinelMetrics } from '../types.js';
-import { Keys } from '../constants.js';
 
 export interface ModerationSummary {
   generatedAt: number;

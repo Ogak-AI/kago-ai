@@ -1,6 +1,5 @@
 import type { RedisClient } from '@devvit/public-api';
 import type { SentinelMetrics, FlaggedItem, UserReputation } from '../types.js';
-import { Keys } from '../constants.js';
 
 export interface SubredditHealthScore {
   overall: number;

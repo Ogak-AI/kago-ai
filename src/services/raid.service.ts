@@ -1,5 +1,4 @@
 import type { RedisClient } from '@devvit/public-api';
-import { Keys } from '../constants.js';
 
 const RAID_WINDOW_MS = 300000;
 const RAID_ITEM_THRESHOLD = 5;

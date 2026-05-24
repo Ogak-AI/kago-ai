@@ -131,7 +131,7 @@ Devvit.addSchedulerJob({
 // Exported schedule helper (called on app install)
 // ──────────────────────────────────────────────
 
-export async function scheduleJobs(context: { scheduler: { runJob: Function } }): Promise<void> {
+export async function scheduleJobs(context: { scheduler: { runJob: (opts: Record<string, unknown>) => Promise<void> } }): Promise<void> {
   // Schedule cleanup every 6 hours
   await context.scheduler.runJob({
     name: JOBS.CLEANUP_QUEUE,
