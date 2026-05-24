@@ -6,8 +6,7 @@
 import { Devvit } from '@devvit/public-api';
 import { getQueueItems, resolveQueueItem } from '../services/queue.service.js';
 import { getMetrics, computeDerivedStats } from '../services/metrics.service.js';
-import { getHealthScore } from '../services/health.service.js';
-import { JOBS, QUEUE_ITEM_TTL_MS, TRUST } from '../constants.js';
+import { JOBS, QUEUE_ITEM_TTL_MS } from '../constants.js';
 
 // ──────────────────────────────────────────────
 // Job: Clean up stale queue items (runs every 6 hours)
@@ -129,38 +128,6 @@ Devvit.addSchedulerJob({
 });
 
 // ──────────────────────────────────────────────
-// Job: Reputation decay (runs daily)
-// ──────────────────────────────────────────────
-
-Devvit.addSchedulerJob({
-  name: JOBS.REPUTATION_DECAY,
-  onRun: async (_event, context) => {
-    try {
-      const subreddit = await context.reddit.getCurrentSubreddit();
-      console.log(`[Sentinel] Reputation decay run for r/${subreddit.name}`);
-    } catch (err) {
-      console.error('[Sentinel] Reputation decay error:', err);
-    }
-  },
-});
-
-// ──────────────────────────────────────────────
-// Job: Threshold recalculation (runs every 6h)
-// ──────────────────────────────────────────────
-
-Devvit.addSchedulerJob({
-  name: JOBS.THRESHOLD_RECALC,
-  onRun: async (_event, context) => {
-    try {
-      const subreddit = await context.reddit.getCurrentSubreddit();
-      console.log(`[Sentinel] Threshold recalculation for r/${subreddit.name}`);
-    } catch (err) {
-      console.error('[Sentinel] Threshold recalculation error:', err);
-    }
-  },
-});
-
-// ──────────────────────────────────────────────
 // Exported schedule helper (called on app install)
 // ──────────────────────────────────────────────
 
@@ -183,15 +150,4 @@ export async function scheduleJobs(context: { scheduler: { runJob: Function } })
     cron: '0 3 * * *',
   });
 
-  // Schedule reputation decay daily at 2 AM UTC
-  await context.scheduler.runJob({
-    name: JOBS.REPUTATION_DECAY,
-    cron: '0 2 * * *',
-  });
-
-  // Schedule threshold recalculation every 6 hours
-  await context.scheduler.runJob({
-    name: JOBS.THRESHOLD_RECALC,
-    cron: '0 */6 * * *',
-  });
 }
