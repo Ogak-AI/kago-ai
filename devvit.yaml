@@ -1,6 +1,6 @@
-name: sentinel-ai-modtool
+name: kago-ai-modtool
 version: 1.0.0
-description: "Sentinel AI: Smart Moderation & Queue Prioritization Engine"
+description: "Kago AI: Smart Moderation & Queue Prioritization Engine"
 
 # Runtime permissions
 permissions:
@@ -74,7 +74,7 @@ settings:
 
   - name: subredditRules
     label: "Subreddit Rules (one per line)"
-    description: "List your subreddit rules here. Sentinel uses these to give context to the AI."
+    description: "List your subreddit rules here. Kago uses these to give context to the AI."
     type: paragraph
     defaultValue: "1. Be respectful\n2. No spam\n3. No self-promotion\n4. Stay on topic"
     required: false
@@ -83,7 +83,7 @@ settings:
     label: "Auto-Removal Comment Template"
     description: "Posted when content is auto-removed. Use {reason} as placeholder."
     type: paragraph
-    defaultValue: "Your post/comment was automatically removed by Sentinel AI for the following reason: {reason}. If you believe this was a mistake, please message the moderators."
+    defaultValue: "Your post/comment was automatically removed by Kago AI for the following reason: {reason}. If you believe this was a mistake, please message the moderators."
     required: false
 
   - name: enableRemovalComments

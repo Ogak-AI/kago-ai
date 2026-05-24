@@ -1,10 +1,10 @@
-# Sentinel AI — Demo Script
+# Kago AI — Demo Script
 
 ---
 
 ## 2-Minute Demo (Elevator Pitch)
 
-**Hook**: "On Reddit, moderators are drowning. 430M users, 3M communities, and every subreddit is fighting spam, scams, and toxicity. Sentinel AI is the moderation operating system that changes everything."
+**Hook**: "On Reddit, moderators are drowning. 430M users, 3M communities, and every subreddit is fighting spam, scams, and toxicity. Kago AI is the moderation operating system that changes everything."
 
 **Flow**:
 1. Open dashboard → show empty state → "This is every mod's dream — a clean queue"
@@ -13,7 +13,7 @@
 4. Click Approve/Remove → "One click to resolve, trust score updates automatically"
 5. Show analytics tab → "65% auto-moderation rate, 5+ hours saved this week"
 
-**Close**: "Sentinel AI: Moderation, automated. Communities, protected."
+**Close**: "Kago AI: Moderation, automated. Communities, protected."
 
 ---
 
@@ -22,7 +22,7 @@
 ### Act 1: The Problem (30s)
 - "Moderating a subreddit is relentless. Every new post could be a scam, toxic attack, or rule violation."
 - "Most mods spend 10+ hours/week on manual review."
-- "Sentinel AI solves this — deployed in 5 minutes."
+- "Kago AI solves this — deployed in 5 minutes."
 
 ### Act 2: Installation (30s)
 - Show `devvit upload` + `devvit playtest`
@@ -45,7 +45,7 @@
 **Scenario 3 — Scam campaign:**
 - Rapidly submit 3-5 scam posts from different author accounts
 - Raid detection fires → health tab shows raid alert
-- "Sentinel detected a coordinated attack in real-time"
+- "Kago detected a coordinated attack in real-time"
 
 ### Act 4: Dashboard Tour (90s)
 - **Queue tab**: Filter by priority/category, batch select, one-click actions
@@ -57,7 +57,7 @@
 
 ### Act 5: Impact & Close (30s)
 - Show metrics: 65% auto-mod rate, 5h saved, <5% false positive rate
-- "Sentinel AI isn't just a tool — it's the infrastructure every subreddit needs."
+- "Kago AI isn't just a tool — it's the infrastructure every subreddit needs."
 - "Available now. Open source. Built entirely on Devvit."
 
 ---
@@ -103,10 +103,10 @@
 2. Show queue priority sorting (critical first)
 3. Auto-ban fires for 3+ violations in 24h
 4. Show temporal escalation in decision reason
-5. "Sentinel doesn't just remove content — it protects the community"
+5. "Kago doesn't just remove content — it protects the community"
 
 ### Scenario: Healthy Community
 1. Show health tab with 90+ score
 2. "Green indicators across the board"
-3. "With Sentinel, this community stays healthy"
+3. "With Kago, this community stays healthy"
 4. "Mods focus on engagement, not cleanup"

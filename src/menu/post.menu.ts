@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Post Menu Actions
+// Kago AI – Post Menu Actions
 // Moderator-only quick actions on posts.
 // Records mod overrides for adaptive learning.
 // ============================================================
@@ -48,7 +48,7 @@ async function resolveAndUpdate(
         await context.reddit.approve(postId);
 
         if (queuedItem) {
-          // This is a false positive — Sentinel wanted to remove, mod approved
+          // This is a false positive — Kago wanted to remove, mod approved
           if (queuedItem.suggestedAction === 'remove' || queuedItem.suggestedAction === 'ban') {
             await recordFalsePositive(context.redis, subredditId);
           }
@@ -166,12 +166,12 @@ async function resolveAndUpdate(
             'Dismissed by moderator',
           );
         }
-        context.ui.showToast({ text: 'Post dismissed from Sentinel queue.', appearance: 'neutral' });
+        context.ui.showToast({ text: 'Post dismissed from Kago queue.', appearance: 'neutral' });
         break;
       }
     }
   } catch (err) {
-    console.error(`[Sentinel] Post menu action failed:`, err);
+    console.error(`[Kago] Post menu action failed:`, err);
     context.ui.showToast({ text: 'Action failed. Check app logs.', appearance: 'neutral' });
   }
 }
@@ -180,8 +180,9 @@ async function resolveAndUpdate(
 // Menu Item Definitions
 // ──────────────────────────────────────────────
 
-export const sentinelApprovePost: MenuItem = {
-  label: 'Sentinel: Approve Post',
+export const kagoApprovePost: MenuItem = {
+  label: 'Kago: Approve Post',
+  description: 'Approve this post, record a Kago false-positive if it was flagged, and boost the author’s trust score.',
   location: 'post',
   forUserType: 'moderator',
   onPress: async (event, context) => {
@@ -191,8 +192,9 @@ export const sentinelApprovePost: MenuItem = {
   },
 };
 
-export const sentinelRemovePost: MenuItem = {
-  label: 'Sentinel: Remove Post',
+export const kagoRemovePost: MenuItem = {
+  label: 'Kago: Remove Post',
+  description: 'Remove this post, record a violation against the author, and post the configured removal-reason comment.',
   location: 'post',
   forUserType: 'moderator',
   onPress: async (event, context) => {
@@ -202,8 +204,9 @@ export const sentinelRemovePost: MenuItem = {
   },
 };
 
-export const sentinelBanUserPost: MenuItem = {
-  label: 'Sentinel: Ban User (30d)',
+export const kagoBanUserPost: MenuItem = {
+  label: 'Kago: Ban User (30d)',
+  description: 'Remove this post and temporarily ban the author for 30 days with a Kago-generated reason.',
   location: 'post',
   forUserType: 'moderator',
   onPress: async (event, context) => {
@@ -213,8 +216,9 @@ export const sentinelBanUserPost: MenuItem = {
   },
 };
 
-export const sentinelIgnorePost: MenuItem = {
-  label: 'Sentinel: Dismiss from Queue',
+export const kagoIgnorePost: MenuItem = {
+  label: 'Kago: Dismiss from Queue',
+  description: 'Remove this item from the Kago queue without taking action on the post itself.',
   location: 'post',
   forUserType: 'moderator',
   onPress: async (event, context) => {

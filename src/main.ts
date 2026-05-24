@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Main Entry Point
+// Kago AI – Main Entry Point
 // Registers all Devvit plugins: triggers, menus, custom post,
 // scheduler jobs, and app install/upgrade lifecycle events.
 // ============================================================
@@ -12,19 +12,20 @@ import './scheduler/jobs.js';
 // ── Feature modules
 import { handlePostSubmit } from './triggers/post.trigger.js';
 import { handleCommentSubmit } from './triggers/comment.trigger.js';
+import { handleModAction } from './triggers/modaction.trigger.js';
 import {
-  sentinelApprovePost,
-  sentinelBanUserPost,
-  sentinelIgnorePost,
-  sentinelRemovePost,
+  kagoApprovePost,
+  kagoBanUserPost,
+  kagoIgnorePost,
+  kagoRemovePost,
 } from './menu/post.menu.js';
 import {
-  sentinelApproveComment,
-  sentinelIgnoreComment,
-  sentinelRemoveComment,
+  kagoApproveComment,
+  kagoIgnoreComment,
+  kagoRemoveComment,
 } from './menu/comment.menu.js';
-import { openSentinelDashboard } from './menu/subreddit.menu.js';
-import { SentinelDashboardPost } from './dashboard/dashboard.post.js';
+import { openKagoDashboard } from './menu/subreddit.menu.js';
+import { KagoDashboardPost } from './dashboard/dashboard.post.js';
 import { scheduleJobs } from './scheduler/jobs.js';
 
 // ──────────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ Devvit.configure({
   redditAPI: true,
   redis: true,
   http: true,
+  realtime: true,
 });
 
 // ──────────────────────────────────────────────────────────
@@ -54,30 +56,38 @@ Devvit.addTrigger({
   onEvent: handleCommentSubmit as any,
 });
 
+/** Fires on every moderator action recorded to the modlog —
+ *  feeds Kago's adaptive learning with real human ground-truth */
+Devvit.addTrigger({
+  event: 'ModAction',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEvent: handleModAction as any,
+});
+
 // ──────────────────────────────────────────────────────────
 // 3. Register Menu Actions
 // ──────────────────────────────────────────────────────────
 
 // Post menu (visible to moderators on posts)
-Devvit.addMenuItem(sentinelApprovePost);
-Devvit.addMenuItem(sentinelRemovePost);
-Devvit.addMenuItem(sentinelBanUserPost);
-Devvit.addMenuItem(sentinelIgnorePost);
+Devvit.addMenuItem(kagoApprovePost);
+Devvit.addMenuItem(kagoRemovePost);
+Devvit.addMenuItem(kagoBanUserPost);
+Devvit.addMenuItem(kagoIgnorePost);
 
 // Comment menu (visible to moderators on comments)
-Devvit.addMenuItem(sentinelApproveComment);
-Devvit.addMenuItem(sentinelRemoveComment);
-Devvit.addMenuItem(sentinelIgnoreComment);
+Devvit.addMenuItem(kagoApproveComment);
+Devvit.addMenuItem(kagoRemoveComment);
+Devvit.addMenuItem(kagoIgnoreComment);
 
 // Subreddit menu (visible to moderators in the subreddit header)
-Devvit.addMenuItem(openSentinelDashboard);
+Devvit.addMenuItem(openKagoDashboard);
 
 // ──────────────────────────────────────────────────────────
 // 4. Register Custom Post Type (Dashboard)
 // ──────────────────────────────────────────────────────────
-// SentinelDashboardPost is registered via Devvit.addCustomPostType()
+// KagoDashboardPost is registered via Devvit.addCustomPostType()
 // inside dashboard.post.ts — importing it here executes that registration.
-void SentinelDashboardPost;
+void KagoDashboardPost;
 
 // ──────────────────────────────────────────────────────────
 // 5. App Install / Upgrade Lifecycle
@@ -88,12 +98,12 @@ Devvit.addTrigger({
   event: 'AppInstall',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onEvent: async (_event: any, context: any) => {
-    console.log('[Sentinel] App installed — scheduling background jobs…');
+    console.log('[Kago] App installed — scheduling background jobs…');
     try {
       await scheduleJobs(context);
-      console.log('[Sentinel] Background jobs scheduled.');
+      console.log('[Kago] Background jobs scheduled.');
     } catch (err) {
-      console.error('[Sentinel] Failed to schedule jobs on install:', err);
+      console.error('[Kago] Failed to schedule jobs on install:', err);
     }
   },
 });
@@ -103,11 +113,11 @@ Devvit.addTrigger({
   event: 'AppUpgrade',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onEvent: async (_event: any, context: any) => {
-    console.log('[Sentinel] App upgraded — rescheduling background jobs…');
+    console.log('[Kago] App upgraded — rescheduling background jobs…');
     try {
       await scheduleJobs(context);
     } catch (err) {
-      console.error('[Sentinel] Failed to reschedule jobs on upgrade:', err);
+      console.error('[Kago] Failed to reschedule jobs on upgrade:', err);
     }
   },
 });

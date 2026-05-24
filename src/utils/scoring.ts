@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Scoring Utilities
+// Kago AI – Scoring Utilities
 // Centralized score computation for priority, trust, and risk.
 // ============================================================
 

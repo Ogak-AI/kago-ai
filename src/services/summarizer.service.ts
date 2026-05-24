@@ -1,5 +1,5 @@
 import type { RedisClient } from '@devvit/public-api';
-import type { AuditEntry, SentinelMetrics } from '../types.js';
+import type { AuditEntry, KagoMetrics } from '../types.js';
 
 export interface ModerationSummary {
   generatedAt: number;
@@ -20,7 +20,7 @@ export interface ModerationSummary {
 export async function generateModerationSummary(
   redis: RedisClient,
   subredditId: string,
-  metrics: SentinelMetrics,
+  metrics: KagoMetrics,
   auditLog: AuditEntry[],
 ): Promise<ModerationSummary> {
   const totalActions = auditLog.length;

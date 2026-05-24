@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// Sentinel AI – Charts Module
+// Kago AI – Charts Module
 // Pure-CSS/SVG chart rendering for the Analytics tab.
 // No external chart libraries — lightweight, fast, beautiful.
 // ═══════════════════════════════════════════════════════════
@@ -215,7 +215,7 @@ function renderTrustDistribution(container, users) {
 /**
  * Render action distribution (auto-removed, auto-approved, manual, etc.).
  * @param {HTMLElement} container
- * @param {Object} metrics - SentinelMetrics from server
+ * @param {Object} metrics - KagoMetrics from server
  */
 function renderActionBreakdown(container, metrics) {
   if (!container || !metrics) return;
@@ -265,7 +265,7 @@ function formatCompact(n) {
 }
 
 // Expose to global scope for app.js
-window.SentinelCharts = {
+window.KagoCharts = {
   renderCategoryChart,
   renderDonutChart,
   renderSparkline,

@@ -1,5 +1,5 @@
 import type { RedisClient } from '@devvit/public-api';
-import type { SentinelMetrics, FlaggedItem, UserReputation } from '../types.js';
+import type { KagoMetrics, FlaggedItem, UserReputation } from '../types.js';
 
 export interface SubredditHealthScore {
   overall: number;
@@ -18,12 +18,12 @@ export interface SubredditHealthScore {
   recommendations: string[];
 }
 
-const HEALTH_KEY = (subredditId: string) => `sentinel:health:${subredditId}`;
+const HEALTH_KEY = (subredditId: string) => `kago:health:${subredditId}`;
 
 export async function computeHealthScore(
   redis: RedisClient,
   subredditId: string,
-  metrics: SentinelMetrics,
+  metrics: KagoMetrics,
   queueItems: FlaggedItem[],
   topUsers: UserReputation[],
 ): Promise<SubredditHealthScore> {

@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Audit Log Service
+// Kago AI – Audit Log Service
 // Records every moderation action for accountability & review.
 // Uses Redis sorted sets (Devvit doesn't support list commands).
 // ============================================================

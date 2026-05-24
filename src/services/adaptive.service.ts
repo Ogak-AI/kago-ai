@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Adaptive Learning Service
+// Kago AI – Adaptive Learning Service
 //
 // Consumes moderator overrides and adjusts per-category
 // confidence thresholds so the system genuinely learns
@@ -53,7 +53,7 @@ export interface AdaptiveState {
 // Redis Key
 // ──────────────────────────────────────────────
 
-const adaptiveKey = (subredditId: string) => `sentinel:adaptive:${subredditId}`;
+const adaptiveKey = (subredditId: string) => `kago:adaptive:${subredditId}`;
 
 // ──────────────────────────────────────────────
 // Core Algorithm

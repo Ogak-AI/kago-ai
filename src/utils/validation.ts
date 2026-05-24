@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Input Validation & Sanitization
+// Kago AI – Input Validation & Sanitization
 // Prevents XSS, injection, and ensures data integrity.
 // ============================================================
 

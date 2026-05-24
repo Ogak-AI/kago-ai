@@ -1,17 +1,17 @@
 // ============================================================
-// Sentinel AI – Metrics Service
+// Kago AI – Metrics Service
 // Tracks moderation statistics per subreddit in Redis.
 // ============================================================
 
 import type { RedisClient } from '@devvit/public-api';
-import type { SentinelMetrics, DerivedStats, ViolationCategory } from '../types.js';
+import type { KagoMetrics, DerivedStats, ViolationCategory } from '../types.js';
 import { Keys } from '../constants.js';
 
 // ──────────────────────────────────────────────
 // Serialization
 // ──────────────────────────────────────────────
 
-function serializeMetrics(m: SentinelMetrics): Record<string, string> {
+function serializeMetrics(m: KagoMetrics): Record<string, string> {
   return {
     subredditId: m.subredditId,
     totalScanned: String(m.totalScanned),
@@ -40,7 +40,7 @@ function serializeMetrics(m: SentinelMetrics): Record<string, string> {
   };
 }
 
-function deserializeMetrics(data: Record<string, string>, subredditId: string): SentinelMetrics {
+function deserializeMetrics(data: Record<string, string>, subredditId: string): KagoMetrics {
   const p = (k: string, d = '0') => parseInt(data[k] ?? d, 10);
   return {
     subredditId,
@@ -74,12 +74,12 @@ function deserializeMetrics(data: Record<string, string>, subredditId: string): 
 // Public API
 // ──────────────────────────────────────────────
 
-async function getOrCreate(redis: RedisClient, subredditId: string): Promise<SentinelMetrics> {
+async function getOrCreate(redis: RedisClient, subredditId: string): Promise<KagoMetrics> {
   const data = await redis.hGetAll(Keys.metrics(subredditId));
   if (data && Object.keys(data).length > 0) {
     return deserializeMetrics(data as Record<string, string>, subredditId);
   }
-  const fresh: SentinelMetrics = {
+  const fresh: KagoMetrics = {
     subredditId,
     totalScanned: 0, autoRemoved: 0, autoApproved: 0, autoBanned: 0,
     manuallyApproved: 0, manuallyRemoved: 0,
@@ -104,7 +104,7 @@ export async function recordScan(
   m.totalScanned += 1;
   m.lastUpdated = Date.now();
 
-  const catMap: Partial<Record<ViolationCategory, keyof SentinelMetrics>> = {
+  const catMap: Partial<Record<ViolationCategory, keyof KagoMetrics>> = {
     spam: 'spamCount',
     toxicity: 'toxicityCount',
     rule_violation: 'ruleViolationCount',
@@ -158,7 +158,7 @@ export async function recordManualRemoval(redis: RedisClient, subredditId: strin
   await redis.hSet(Keys.metrics(subredditId), serializeMetrics(m));
 }
 
-/** Record a false positive (mod approved something Sentinel wanted to remove). */
+/** Record a false positive (mod approved something Kago wanted to remove). */
 export async function recordFalsePositive(redis: RedisClient, subredditId: string): Promise<void> {
   const m = await getOrCreate(redis, subredditId);
   m.falsePositives += 1;
@@ -170,12 +170,12 @@ export async function recordFalsePositive(redis: RedisClient, subredditId: strin
 export async function getMetrics(
   redis: RedisClient,
   subredditId: string,
-): Promise<SentinelMetrics> {
+): Promise<KagoMetrics> {
   return getOrCreate(redis, subredditId);
 }
 
 /** Compute derived stats for display. */
-export function computeDerivedStats(m: SentinelMetrics): DerivedStats {
+export function computeDerivedStats(m: KagoMetrics): DerivedStats {
   const autoHandled = m.autoRemoved + m.autoApproved + m.autoBanned;
   const autoModRate = m.totalScanned > 0 ? Math.round((autoHandled / m.totalScanned) * 100) : 0;
   const timeSavedHours = parseFloat(((autoHandled * 2) / 60).toFixed(1));

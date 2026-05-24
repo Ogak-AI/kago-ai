@@ -1,14 +1,15 @@
 // ============================================================
-// Sentinel AI – Subreddit Menu Action
-// Creates or navigates to the Sentinel Dashboard post.
+// Kago AI – Subreddit Menu Action
+// Creates or navigates to the Kago Dashboard post.
 // ============================================================
 
 import { Devvit } from '@devvit/public-api';
 import type { MenuItem } from '@devvit/public-api';
 import { Keys } from '../constants.js';
 
-export const openSentinelDashboard: MenuItem = {
-  label: 'Open Sentinel Dashboard',
+export const openKagoDashboard: MenuItem = {
+  label: 'Open Kago Dashboard',
+  description: 'Create or jump to the pinned Kago AI moderation dashboard for this subreddit.',
   location: 'subreddit',
   forUserType: 'moderator',
   onPress: async (_event, context) => {
@@ -29,12 +30,12 @@ export const openSentinelDashboard: MenuItem = {
       // Create a new dashboard post
       const post = await context.reddit.submitPost({
         subredditName,
-        title: 'Sentinel AI — Moderation Dashboard',
+        title: 'Kago AI — Moderation Dashboard',
         // Custom post type — renders the Devvit interactive UI
         preview: (
           <vstack alignment="center middle" height="100%">
-            <image url="sentinel_logo.png" imageWidth={64} imageHeight={64} />
-            <text size="xlarge" weight="bold">Sentinel AI</text>
+            <image url="kago_logo.png" imageWidth={64} imageHeight={64} />
+            <text size="xlarge" weight="bold">Kago AI</text>
             <text size="medium" color="neutral-content-weak">Loading moderation dashboard…</text>
           </vstack>
         ),
@@ -51,9 +52,9 @@ export const openSentinelDashboard: MenuItem = {
       }
 
       context.ui.navigateTo(post);
-      context.ui.showToast({ text: 'Sentinel Dashboard created!', appearance: 'success' });
+      context.ui.showToast({ text: 'Kago Dashboard created!', appearance: 'success' });
     } catch (err) {
-      console.error('[Sentinel] Failed to create/open dashboard:', err);
+      console.error('[Kago] Failed to create/open dashboard:', err);
       context.ui.showToast({ text: 'Could not open dashboard.', appearance: 'neutral' });
     }
   },

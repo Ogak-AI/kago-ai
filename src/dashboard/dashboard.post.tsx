@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Dashboard Custom Post (Devvit Blocks + Webview)
+// Kago AI – Dashboard Custom Post (Devvit Blocks + Webview)
 // The pinned interactive dashboard moderators use.
 // ============================================================
 
@@ -24,6 +24,12 @@ import { recordAuditEntry, buildAuditEntry, getAuditLog } from '../services/audi
 import { computeHealthScore, getHealthScore } from '../services/health.service.js';
 import { getActiveRaidAlert } from '../services/raid.service.js';
 import { generateModerationSummary } from '../services/summarizer.service.js';
+import {
+  kagoChannel,
+  publishEvent,
+  makeQueueResolvedEvent,
+  type KagoEvent,
+} from '../services/realtime.service.js';
 import { Keys, MAX_OVERRIDE_LOG } from '../constants.js';
 
 
@@ -185,6 +191,7 @@ async function handleAction(
     switch (action) {
       case 'approve': {
         await context.reddit.approve(itemId);
+        void publishEvent(context, subredditId, makeQueueResolvedEvent(itemId, modUsername, 'mod_approved'));
         const resolved = await resolveQueueItem(context.redis, subredditId, itemId, 'mod_approved', modUsername);
         if (resolved?.authorId) {
           if (resolved.suggestedAction === 'remove' || resolved.suggestedAction === 'ban') {
@@ -213,6 +220,7 @@ async function handleAction(
 
       case 'remove': {
         await context.reddit.remove(itemId, false);
+        void publishEvent(context, subredditId, makeQueueResolvedEvent(itemId, modUsername, 'mod_removed'));
         const resolved = await resolveQueueItem(context.redis, subredditId, itemId, 'mod_removed', modUsername);
         if (resolved?.authorId) {
           await recordViolation(context.redis, subredditId, resolved.authorId, resolved.authorName);
@@ -238,6 +246,7 @@ async function handleAction(
 
       case 'ban': {
         const item = await resolveQueueItem(context.redis, subredditId, itemId, 'mod_banned', modUsername);
+        void publishEvent(context, subredditId, makeQueueResolvedEvent(itemId, modUsername, 'mod_banned'));
         if (item?.authorName) {
           await context.reddit.banUser({
             subredditName: subreddit.name,
@@ -266,6 +275,7 @@ async function handleAction(
 
       case 'ignore': {
         await resolveQueueItem(context.redis, subredditId, itemId, 'ignored', modUsername);
+        void publishEvent(context, subredditId, makeQueueResolvedEvent(itemId, modUsername, 'ignored'));
         if (originalItem) {
           await recordAuditEntry(context.redis, subredditId, buildAuditEntry(
             'manual_ignore', itemId, originalItem.type, originalItem.body,
@@ -285,7 +295,7 @@ async function handleAction(
 
     return { success: false, message: 'Unknown action' };
   } catch (err) {
-    console.error('[Sentinel] Dashboard action failed:', err);
+    console.error('[Kago] Dashboard action failed:', err);
     return { success: false, message: `Error: ${err}` };
   }
 }
@@ -387,7 +397,7 @@ async function handleBatchAction(
       }
       successCount++;
     } catch (err) {
-      console.error(`[Sentinel] Batch action failed for ${itemId}:`, err);
+      console.error(`[Kago] Batch action failed for ${itemId}:`, err);
       failCount++;
     }
   }
@@ -408,20 +418,43 @@ async function handleBatchAction(
 // Custom Post Definition
 // ──────────────────────────────────────────────
 
-export const SentinelDashboardPost = Devvit.addCustomPostType({
-  name: 'Sentinel AI Dashboard',
-  description: 'Smart moderation dashboard for Sentinel AI',
+export const KagoDashboardPost = Devvit.addCustomPostType({
+  name: 'Kago AI Dashboard',
+  description: 'Smart moderation dashboard for Kago AI',
   height: 'tall',
 
   render: (context) => {
-    const { useState } = context;
+    const { useState, useChannel } = context;
     const [launched, setLaunched] = useState(false);
+
+    // ── Realtime channel ────────────────────────────────────
+    // Subscribes to per-subreddit Kago events published by
+    // triggers (queue:added, auto:action, mod:override, etc.)
+    // and forwards them to the webview so the dashboard updates
+    // without polling.
+    const channel = useChannel({
+      name: kagoChannel(context.subredditId),
+      onMessage: (msg) => {
+        const event = msg as unknown as KagoEvent;
+        try {
+          context.ui.webView.postMessage('kago-dashboard',
+            JSON.parse(JSON.stringify({
+              type: 'REALTIME_EVENT',
+              payload: event,
+            })),
+          );
+        } catch (err) {
+          console.warn('[Kago/dashboard] Failed to forward realtime event:', err);
+        }
+      },
+    });
+    channel.subscribe();
 
     const onMessage = async (message: WebviewMessage) => {
       const refreshAndSend = async (extra: Record<string, unknown> = {}) => {
         const data = await loadDashboardData(context);
         const derived = computeDerivedStats(data.metrics);
-        context.ui.webView.postMessage('sentinel-dashboard',
+        context.ui.webView.postMessage('kago-dashboard',
           JSON.parse(JSON.stringify({
             type: 'INIT_DATA',
             payload: { ...data, derived, ...extra },
@@ -452,7 +485,7 @@ export const SentinelDashboardPost = Devvit.addCustomPostType({
           await saveCustomRules(context.redis, subreddit.id, payload.rules);
           await refreshAndSend({ actionResult: { success: true, message: 'Rules saved successfully' } });
         } catch {
-          context.ui.webView.postMessage('sentinel-dashboard',
+          context.ui.webView.postMessage('kago-dashboard',
             JSON.parse(JSON.stringify({
               type: 'INIT_DATA',
               payload: { actionResult: { success: false, message: 'Failed to save rules' } },
@@ -477,7 +510,7 @@ export const SentinelDashboardPost = Devvit.addCustomPostType({
 
           await refreshAndSend({ actionResult: { success: true, message: 'Content restored successfully' } });
         } catch {
-          context.ui.webView.postMessage('sentinel-dashboard',
+          context.ui.webView.postMessage('kago-dashboard',
             JSON.parse(JSON.stringify({
               type: 'INIT_DATA',
               payload: { actionResult: { success: false, message: 'Failed to restore content' } },
@@ -498,7 +531,7 @@ export const SentinelDashboardPost = Devvit.addCustomPostType({
           padding="large"
         >
           <spacer size="large" />
-          <text size="xxlarge" weight="bold" color="#818cf8">Sentinel AI</text>
+          <text size="xxlarge" weight="bold" color="#818cf8">Kago AI</text>
           <text size="large" weight="bold" color="#f1f5f9">Adaptive Moderation & Queue Intelligence</text>
           <spacer size="small" />
           <text size="medium" color="#64748b" alignment="center">
@@ -529,7 +562,7 @@ export const SentinelDashboardPost = Devvit.addCustomPostType({
     return (
       <vstack height="100%" width="100%">
         <webview
-          id="sentinel-dashboard"
+          id="kago-dashboard"
           url="index.html"
           width="100%"
           height="100%"

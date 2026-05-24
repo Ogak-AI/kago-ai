@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Cache Service
+// Kago AI – Cache Service
 // Redis-backed caching for AI analysis results.
 // Prevents duplicate OpenAI calls for identical content.
 // ============================================================
@@ -66,7 +66,7 @@ export async function setCachedAnalysis(
     });
   } catch {
     // Cache write failures are non-critical — log and continue
-    console.warn('[Sentinel/cache] Failed to write analysis cache');
+    console.warn('[Kago/cache] Failed to write analysis cache');
   }
 }
 

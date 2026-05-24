@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// Sentinel AI – Dashboard Application Logic
+// Kago AI – Dashboard Application Logic
 // Manages state, rendering, and Devvit message bridge.
 // ═══════════════════════════════════════════════════════════
 
@@ -67,10 +67,82 @@ window.addEventListener('message', (event) => {
     updateBatchBar();
 
     if (state.actionResult) {
-      showToast(state.actionResult.message);
+      showToast(state.actionResult.message, state.actionResult.success === false ? 'error' : 'success');
     }
   }
+
+  if (msg.type === 'REALTIME_EVENT') {
+    handleRealtimeEvent(msg.payload);
+  }
 });
+
+// ──────────────────────────────────────────────────────────
+// Realtime Event Handler
+//
+// Receives push events from the Devvit realtime channel via
+// the custom post's useChannel forwarder. Updates state
+// optimistically so the dashboard reflects new queue items
+// and resolutions instantly — no polling required.
+// ──────────────────────────────────────────────────────────
+function handleRealtimeEvent(event) {
+  if (!event || !event.type) return;
+
+  switch (event.type) {
+    case 'queue:added': {
+      if (!event.item || !event.item.id) return;
+      const exists = state.queueItems.some((i) => i.id === event.item.id);
+      if (!exists) {
+        state.queueItems = [event.item, ...state.queueItems];
+        renderQueue({ slideIn: event.item.id });
+        renderStats();
+        flashLiveIndicator();
+      }
+      break;
+    }
+
+    case 'queue:resolved': {
+      const before = state.queueItems.length;
+      state.queueItems = state.queueItems.filter((i) => i.id !== event.itemId);
+      if (state.queueItems.length !== before) {
+        renderQueue();
+        renderStats();
+        if (event.resolvedBy && event.resolvedBy !== state.currentUsername) {
+          showToast(`u/${event.resolvedBy} resolved an item`, 'info');
+        }
+      }
+      break;
+    }
+
+    case 'auto:action': {
+      flashLiveIndicator();
+      const verb = event.action === 'auto_remove' ? 'auto-removed'
+        : event.action === 'auto_ban_temp' ? 'auto-banned'
+        : 'auto-approved';
+      showToast(`Kago ${verb} a ${event.contentType} (${event.category} @ ${event.confidence}%)`, 'info');
+      break;
+    }
+
+    case 'raid:alert': {
+      showToast(`Raid detected: ${event.itemCount} items from ${event.uniqueAuthors} accounts`, 'error');
+      postToDevvit({ type: 'REFRESH' });
+      break;
+    }
+
+    case 'mod:override': {
+      // Silent: feeds the learning system but doesn't need UI noise
+      break;
+    }
+  }
+}
+
+function flashLiveIndicator() {
+  const dot = document.querySelector('#statusBadge .status-dot');
+  if (!dot) return;
+  dot.classList.remove('sn-live-pulse');
+  // eslint-disable-next-line no-unused-expressions
+  void dot.offsetWidth;
+  dot.classList.add('sn-live-pulse');
+}
 
 
 // Request data when page loads
@@ -183,9 +255,10 @@ function updateStatusBadge() {
 // ──────────────────────────────────────────────────────────
 // Queue
 // ──────────────────────────────────────────────────────────
-function renderQueue() {
+function renderQueue(opts) {
   const list = document.getElementById('queueList');
   const empty = document.getElementById('queueEmpty');
+  const slideInId = opts && opts.slideIn;
 
   let items = state.queueItems.filter(i => i.status === 'pending');
 
@@ -210,6 +283,9 @@ function renderQueue() {
 
   items.forEach(item => {
     const card = buildQueueCard(item);
+    if (slideInId && item.id === slideInId) {
+      card.classList.add('sn-slide-in');
+    }
     list.appendChild(card);
   });
 }
@@ -661,14 +737,22 @@ function renderRules() {
 
 // ──────────────────────────────────────────────────────────
 // Toast Notification
+//
+// Accepts a variant ("success" | "error" | "info") so the toast
+// can color-code by intent.
 // ──────────────────────────────────────────────────────────
 let toastTimer = null;
-function showToast(msg) {
+function showToast(msg, variant) {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
+  toast.classList.remove('toast-success', 'toast-error', 'toast-info');
+  if (variant === 'success') toast.classList.add('toast-success');
+  else if (variant === 'error') toast.classList.add('toast-error');
+  else if (variant === 'info') toast.classList.add('toast-info');
   toast.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  const dur = variant === 'error' ? 4500 : 3000;
+  toastTimer = setTimeout(() => toast.classList.remove('show'), dur);
 }
 
 // ──────────────────────────────────────────────────────────
@@ -1020,10 +1104,10 @@ function updateAiModeBadge() {
 }
 
 // ──────────────────────────────────────────────────────────
-// Charts Integration (uses SentinelCharts from charts.js)
+// Charts Integration (uses KagoCharts from charts.js)
 // ──────────────────────────────────────────────────────────
 function renderCharts() {
-  if (!window.SentinelCharts) return;
+  if (!window.KagoCharts) return;
   const m = state.metrics;
   if (!m) return;
 
@@ -1040,13 +1124,200 @@ function renderCharts() {
   };
 
   const donutEl = document.getElementById('donutChartContainer');
-  if (donutEl) window.SentinelCharts.renderDonutChart(donutEl, catData);
+  if (donutEl) window.KagoCharts.renderDonutChart(donutEl, catData);
 
   // Action breakdown
   const actionEl = document.getElementById('actionBreakdownContainer');
-  if (actionEl) window.SentinelCharts.renderActionBreakdown(actionEl, m);
+  if (actionEl) window.KagoCharts.renderActionBreakdown(actionEl, m);
 
   // Trust distribution
   const trustEl = document.getElementById('trustDistChart');
-  if (trustEl) window.SentinelCharts.renderTrustDistribution(trustEl, state.topUsers);
+  if (trustEl) window.KagoCharts.renderTrustDistribution(trustEl, state.topUsers);
 }
+
+// ──────────────────────────────────────────────────────────
+// Keyboard Shortcuts
+//
+// Power-user navigation. Mirrors Linear/Gmail patterns:
+//   j / k     — focus next / previous queue item
+//   a / r     — approve / remove focused item
+//   b         — ban (only if Kago suggested ban)
+//   i         — dismiss
+//   x         — toggle batch-select on focused item
+//   g + key   — jump-to-tab sequence (q,s,u,r,h,a,c)
+//   ?         — toggle shortcut overlay
+//   Esc       — close overlay or modal
+//
+// Disabled while typing in an input/textarea/select.
+// ──────────────────────────────────────────────────────────
+
+const SN_TAB_MAP = {
+  q: 'queue', s: 'stats', u: 'users', r: 'rules',
+  h: 'health', a: 'audit', c: 'settings',
+};
+
+let snFocusIndex = -1;
+let snAwaitingG = false;
+let snAwaitingGTimer = null;
+
+function snGetVisibleCards() {
+  return Array.from(document.querySelectorAll('#queueList .queue-item'));
+}
+
+function snFocusCard(idx) {
+  const cards = snGetVisibleCards();
+  if (cards.length === 0) { snFocusIndex = -1; return; }
+  cards.forEach((c) => c.classList.remove('sn-focused'));
+  snFocusIndex = Math.max(0, Math.min(cards.length - 1, idx));
+  const target = cards[snFocusIndex];
+  target.classList.add('sn-focused');
+  target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function snFocusedCard() {
+  const cards = snGetVisibleCards();
+  if (snFocusIndex < 0 || snFocusIndex >= cards.length) return null;
+  return cards[snFocusIndex];
+}
+
+function snTriggerActionOnFocused(action) {
+  const card = snFocusedCard();
+  if (!card) return;
+  const id = card.dataset.id;
+  if (!id) return;
+  const btn = card.querySelector('.quick-btn[data-id="' + id + '"][data-action="' + action + '"]');
+  if (btn) btn.click();
+  else if (action === 'ban') showToast('Ban not available — Kago did not flag this for ban', 'info');
+}
+
+function snToggleBatchOnFocused() {
+  const card = snFocusedCard();
+  if (!card) return;
+  const cb = card.querySelector('.batch-checkbox');
+  if (cb) cb.click();
+}
+
+function snSwitchTab(tabKey) {
+  const tab = document.querySelector('.tab[data-tab="' + tabKey + '"]');
+  if (tab) tab.click();
+}
+
+function snToggleOverlay(show) {
+  const overlay = document.getElementById('snShortcutsOverlay');
+  if (!overlay) return;
+  if (show === undefined) overlay.classList.toggle('show');
+  else overlay.classList.toggle('show', !!show);
+}
+
+function snTypingInInput(target) {
+  if (!target) return false;
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (target.isContentEditable) return true;
+  return false;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (snTypingInInput(e.target)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('snShortcutsOverlay');
+    if (overlay && overlay.classList.contains('show')) {
+      overlay.classList.remove('show');
+      e.preventDefault();
+      return;
+    }
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    if (modalBackdrop && modalBackdrop.classList.contains('show')) {
+      modalBackdrop.classList.remove('show');
+      e.preventDefault();
+      return;
+    }
+    return;
+  }
+
+  if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+    snToggleOverlay();
+    e.preventDefault();
+    return;
+  }
+
+  if (snAwaitingG) {
+    snAwaitingG = false;
+    if (snAwaitingGTimer) { clearTimeout(snAwaitingGTimer); snAwaitingGTimer = null; }
+    const tabKey = SN_TAB_MAP[e.key.toLowerCase()];
+    if (tabKey) { snSwitchTab(tabKey); e.preventDefault(); return; }
+  }
+  if (e.key === 'g' && !e.shiftKey) {
+    snAwaitingG = true;
+    snAwaitingGTimer = setTimeout(() => { snAwaitingG = false; }, 1200);
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === 'j') {
+    const cards = snGetVisibleCards();
+    if (cards.length === 0) return;
+    snFocusCard(snFocusIndex < 0 ? 0 : Math.min(cards.length - 1, snFocusIndex + 1));
+    e.preventDefault();
+    return;
+  }
+  if (e.key === 'k') {
+    const cards = snGetVisibleCards();
+    if (cards.length === 0) return;
+    snFocusCard(snFocusIndex < 0 ? 0 : Math.max(0, snFocusIndex - 1));
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === 'a') { snTriggerActionOnFocused('approve'); e.preventDefault(); return; }
+  if (e.key === 'r') { snTriggerActionOnFocused('remove'); e.preventDefault(); return; }
+  if (e.key === 'b') { snTriggerActionOnFocused('ban'); e.preventDefault(); return; }
+  if (e.key === 'i') { snTriggerActionOnFocused('ignore'); e.preventDefault(); return; }
+  if (e.key === 'x') { snToggleBatchOnFocused(); e.preventDefault(); return; }
+});
+
+(function injectShortcutOverlay() {
+  if (document.getElementById('snShortcutsOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'snShortcutsOverlay';
+  overlay.className = 'sn-shortcut-overlay';
+  overlay.innerHTML =
+    '<div class="sn-shortcut-card">' +
+      '<div class="sn-shortcut-header">' +
+        '<span>Keyboard Shortcuts</span>' +
+        '<button class="sn-shortcut-close" aria-label="Close shortcuts" title="Close (Esc)">&times;</button>' +
+      '</div>' +
+      '<div class="sn-shortcut-grid">' +
+        '<div class="sn-shortcut-section">' +
+          '<div class="sn-shortcut-title">Navigate</div>' +
+          '<div class="sn-shortcut-row"><kbd>j</kbd><kbd>k</kbd><span>Next / previous queue item</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>g</kbd> <kbd>q</kbd><span>Jump to Queue</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>g</kbd> <kbd>s</kbd><span>Jump to Analytics</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>g</kbd> <kbd>u</kbd><span>Jump to Users</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>g</kbd> <kbd>r</kbd><span>Jump to Rules</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>g</kbd> <kbd>h</kbd><span>Jump to Health</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>g</kbd> <kbd>a</kbd><span>Jump to Audit Log</span></div>' +
+        '</div>' +
+        '<div class="sn-shortcut-section">' +
+          '<div class="sn-shortcut-title">Act on focused item</div>' +
+          '<div class="sn-shortcut-row"><kbd>a</kbd><span>Approve</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>r</kbd><span>Remove</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>b</kbd><span>Ban (when suggested)</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>i</kbd><span>Dismiss</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>x</kbd><span>Toggle batch select</span></div>' +
+          '<div class="sn-shortcut-title" style="margin-top:14px">General</div>' +
+          '<div class="sn-shortcut-row"><kbd>?</kbd><span>Show this overlay</span></div>' +
+          '<div class="sn-shortcut-row"><kbd>Esc</kbd><span>Close overlay / modal</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sn-shortcut-foot">Kago AI — Moderation OS for Reddit</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('sn-shortcut-close')) {
+      overlay.classList.remove('show');
+    }
+  });
+})();

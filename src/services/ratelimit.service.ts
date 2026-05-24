@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Rate Limiter & Cost Tracker
+// Kago AI – Rate Limiter & Cost Tracker
 //
 // Prevents runaway OpenAI API costs by tracking daily usage
 // and enforcing a configurable daily call limit.
@@ -13,11 +13,11 @@ import type { RedisClient } from '@devvit/public-api';
 
 function dailyKey(subredditId: string): string {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  return `sentinel:ratelimit:${subredditId}:${today}`;
+  return `kago:ratelimit:${subredditId}:${today}`;
 }
 
 function costKey(subredditId: string): string {
-  return `sentinel:cost:${subredditId}`;
+  return `kago:cost:${subredditId}`;
 }
 
 // ──────────────────────────────────────────────

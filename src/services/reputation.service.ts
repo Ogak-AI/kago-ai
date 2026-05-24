@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – User Reputation Service
+// Kago AI – User Reputation Service
 // Maintains per-user trust scores per subreddit in Redis.
 // ============================================================
 

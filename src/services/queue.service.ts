@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Queue Service
+// Kago AI – Queue Service
 // Manages the priority-sorted mod queue in Redis.
 // ============================================================
 

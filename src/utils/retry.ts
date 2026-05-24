@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Retry & Resilience Utilities
+// Kago AI – Retry & Resilience Utilities
 // Handles transient failures with exponential backoff.
 // ============================================================
 

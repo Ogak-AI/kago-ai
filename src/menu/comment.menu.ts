@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Comment Menu Actions
+// Kago AI – Comment Menu Actions
 // ============================================================
 
 import type { Context, MenuItem } from '@devvit/public-api';
@@ -66,13 +66,14 @@ async function resolveComment(
       }
     }
   } catch (err) {
-    console.error('[Sentinel] Comment action failed:', err);
+    console.error('[Kago] Comment action failed:', err);
     context.ui.showToast({ text: 'Action failed.', appearance: 'neutral' });
   }
 }
 
-export const sentinelApproveComment: MenuItem = {
-  label: 'Sentinel: Approve Comment',
+export const kagoApproveComment: MenuItem = {
+  label: 'Kago: Approve Comment',
+  description: 'Approve this comment, record a Kago false-positive if it was flagged, and boost the author’s trust score.',
   location: 'comment',
   forUserType: 'moderator',
   onPress: async (event, context) => {
@@ -81,8 +82,9 @@ export const sentinelApproveComment: MenuItem = {
   },
 };
 
-export const sentinelRemoveComment: MenuItem = {
-  label: 'Sentinel: Remove Comment',
+export const kagoRemoveComment: MenuItem = {
+  label: 'Kago: Remove Comment',
+  description: 'Remove this comment and record a violation against the author in Kago’s reputation system.',
   location: 'comment',
   forUserType: 'moderator',
   onPress: async (event, context) => {
@@ -91,8 +93,9 @@ export const sentinelRemoveComment: MenuItem = {
   },
 };
 
-export const sentinelIgnoreComment: MenuItem = {
-  label: 'Sentinel: Dismiss Comment',
+export const kagoIgnoreComment: MenuItem = {
+  label: 'Kago: Dismiss Comment',
+  description: 'Remove this comment from the Kago queue without taking action on the comment itself.',
   location: 'comment',
   forUserType: 'moderator',
   onPress: async (event, context) => {

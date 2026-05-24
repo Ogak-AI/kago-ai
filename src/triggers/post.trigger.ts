@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Post Submit Trigger
+// Kago AI – Post Submit Trigger
 //
 // Full pipeline per post:
 //   1. Dedup guard
@@ -42,6 +42,11 @@ import {
 } from '../services/rules.service.js';
 import { recordAuditEntry, buildAuditEntry } from '../services/audit.service.js';
 import { getAdaptiveThreshold } from '../services/adaptive.service.js';
+import {
+  publishEvent,
+  makeAutoActionEvent,
+  makeQueueAddedEvent,
+} from '../services/realtime.service.js';
 import { AUTO_BAN_DURATION_DAYS } from '../constants.js';
 
 export async function handlePostSubmit(
@@ -84,7 +89,7 @@ export async function handlePostSubmit(
       karma = (userInfo.linkKarma ?? 0) + (userInfo.commentKarma ?? 0);
     }
   } catch {
-    console.warn(`[Sentinel] Could not fetch user info for ${authorName}`);
+    console.warn(`[Kago] Could not fetch user info for ${authorName}`);
   }
 
   const [rep, recentViolations24h] = await Promise.all([
@@ -103,7 +108,7 @@ export async function handlePostSubmit(
   }
 
   console.log(
-    `[Sentinel/post] ${itemId} — ${analysis.category} @ ${analysis.confidence}% [${analysis.severity}] src:${analysis.source}${triggeredRuleName ? ` rule:"${triggeredRuleName}"` : ''}`,
+    `[Kago/post] ${itemId} — ${analysis.category} @ ${analysis.confidence}% [${analysis.severity}] src:${analysis.source}${triggeredRuleName ? ` rule:"${triggeredRuleName}"` : ''}`,
   );
 
   // ── 6. Decision Engine ────────────────────────────────────
@@ -130,7 +135,7 @@ export async function handlePostSubmit(
     adaptiveThreshold,
   });
 
-  console.log(`[Sentinel/post] ${itemId} → decision: ${decision.action} — ${decision.reason}`);
+  console.log(`[Kago/post] ${itemId} → decision: ${decision.action} — ${decision.reason}`);
 
   // Record the scan in metrics
   await recordScan(context.redis, subredditId, analysis.category);
@@ -150,6 +155,10 @@ export async function handlePostSubmit(
       authorName, analysis.category, analysis.confidence,
       triggeredRuleName ? 'rule_engine' : 'ai_auto',
       decision.reason,
+    ));
+    await publishEvent(context, subredditId, makeAutoActionEvent(
+      itemId, 'post', 'auto_approve', analysis.category, analysis.confidence,
+      authorName, decision.reason,
     ));
     return;
   }
@@ -172,7 +181,7 @@ export async function handlePostSubmit(
         }
       }
 
-      console.log(`[Sentinel/post] AUTO-REMOVED ${itemId}`);
+      console.log(`[Kago/post] AUTO-REMOVED ${itemId}`);
 
       await recordAuditEntry(context.redis, subredditId, buildAuditEntry(
         'auto_remove', itemId, 'post', (title + ' ' + body).slice(0, 120),
@@ -180,8 +189,12 @@ export async function handlePostSubmit(
         triggeredRuleName ? 'rule_engine' : 'ai_auto',
         decision.reason,
       ));
+      await publishEvent(context, subredditId, makeAutoActionEvent(
+        itemId, 'post', 'auto_remove', analysis.category, analysis.confidence,
+        authorName, decision.reason,
+      ));
     } catch (err) {
-      console.error(`[Sentinel/post] Remove failed for ${itemId}:`, err);
+      console.error(`[Kago/post] Remove failed for ${itemId}:`, err);
     }
     return;
   }
@@ -200,7 +213,7 @@ export async function handlePostSubmit(
       await recordViolation(context.redis, subredditId, authorId, authorName, accountAgeDays, karma);
       await recordAutoRemoval(context.redis, subredditId);
 
-      console.log(`[Sentinel/post] AUTO-BANNED ${authorName} (${AUTO_BAN_DURATION_DAYS}d) for ${itemId}`);
+      console.log(`[Kago/post] AUTO-BANNED ${authorName} (${AUTO_BAN_DURATION_DAYS}d) for ${itemId}`);
 
       await recordAuditEntry(context.redis, subredditId, buildAuditEntry(
         'auto_remove', itemId, 'post', (title + ' ' + body).slice(0, 120),
@@ -208,8 +221,12 @@ export async function handlePostSubmit(
         triggeredRuleName ? 'rule_engine' : 'ai_auto',
         `Auto-banned (${AUTO_BAN_DURATION_DAYS}d): ${decision.reason}`,
       ));
+      await publishEvent(context, subredditId, makeAutoActionEvent(
+        itemId, 'post', 'auto_ban_temp', analysis.category, analysis.confidence,
+        authorName, decision.reason,
+      ));
     } catch (err) {
-      console.error(`[Sentinel/post] Auto-ban failed for ${authorName}:`, err);
+      console.error(`[Kago/post] Auto-ban failed for ${authorName}:`, err);
     }
     return;
   }
@@ -222,7 +239,7 @@ export async function handlePostSubmit(
   } as const;
 
   if (decision.action in priorityMap) {
-    await enqueueItem(context.redis, subredditId, analysis, {
+    const queued = await enqueueItem(context.redis, subredditId, analysis, {
       id: itemId,
       type: 'post',
       title,
@@ -238,6 +255,8 @@ export async function handlePostSubmit(
       triggeredRule: triggeredRuleName,
     });
 
-    console.log(`[Sentinel/post] Queued ${itemId} for ${decision.action} review`);
+    console.log(`[Kago/post] Queued ${itemId} for ${decision.action} review`);
+
+    await publishEvent(context, subredditId, makeQueueAddedEvent(queued));
   }
 }

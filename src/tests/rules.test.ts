@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Rule Engine Unit Tests
+// Kago AI – Rule Engine Unit Tests
 // Validates custom rule evaluation, pattern matching, and
 // short-circuit behavior.
 // ============================================================

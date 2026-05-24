@@ -1,7 +1,7 @@
 // ============================================================
-// Sentinel AI – Decision Engine
+// Kago AI – Decision Engine
 //
-// This is the core intelligence of Sentinel AI.
+// This is the core intelligence of Kago AI.
 // It takes AI analysis + user context and produces a definitive,
 // explainable decision — not just a flag.
 //
@@ -20,7 +20,7 @@ import type {
   DecisionResult,
   Severity,
   UserReputation,
-  SentinelSettings,
+  KagoSettings,
 } from '../types.js';
 import {
   AUTO_BAN_VIOLATION_THRESHOLD,
@@ -116,7 +116,7 @@ export async function countRecentViolations(
 export interface DecisionContext {
   analysis: AIAnalysisResult;
   user: UserReputation;
-  settings: SentinelSettings;
+  settings: KagoSettings;
   recentViolations24h: number;
   reportCount?: number;
   /** Optional adaptive threshold override (from adaptive learning) */

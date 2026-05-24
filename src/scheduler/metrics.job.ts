@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Metrics Rollup Job
+// Kago AI – Metrics Rollup Job
 // Computes hourly analytics snapshots and logs performance.
 // Re-exports from the unified jobs module.
 // ============================================================

@@ -1,12 +1,12 @@
 // ============================================================
-// Sentinel AI – Moderation Orchestration Service
+// Kago AI – Moderation Orchestration Service
 // High-level pipeline that ties together AI analysis, caching,
 // decision engine, queue routing, metrics, and audit logging.
 // Used by triggers to avoid duplicating orchestration logic.
 // ============================================================
 
 import type { RedisClient } from '@devvit/public-api';
-import type { AIAnalysisResult, ContentType, SentinelSettings, UserReputation } from '../types.js';
+import type { AIAnalysisResult, ContentType, KagoSettings, UserReputation } from '../types.js';
 import { analyzeContent } from './ai.service.js';
 import { getCachedAnalysis, setCachedAnalysis } from './cache.service.js';
 import { decide } from './decision.service.js';
@@ -64,7 +64,7 @@ export interface ModerationInput {
  */
 export async function runModerationPipeline(
   input: ModerationInput,
-  settings: SentinelSettings,
+  settings: KagoSettings,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   redditApi: any,
   redis: RedisClient,

@@ -1,17 +1,17 @@
 // ============================================================
-// Sentinel AI – Settings Helper
+// Kago AI – Settings Helper
 // Loads and normalizes app settings from Devvit settings API.
 // ============================================================
 
 import type { Context } from '@devvit/public-api';
-import type { SentinelSettings } from '../types.js';
+import type { KagoSettings } from '../types.js';
 import { DEFAULT_SETTINGS } from '../constants.js';
 
 /**
- * Load all Sentinel settings from Devvit's settings store.
+ * Load all Kago settings from Devvit's settings store.
  * Falls back to defaults for any missing values.
  */
-export async function loadSettings(context: Context): Promise<SentinelSettings> {
+export async function loadSettings(context: Context): Promise<KagoSettings> {
   const get = async <T>(key: string, fallback: T): Promise<T> => {
     try {
       const val = await context.settings.get<T>(key);

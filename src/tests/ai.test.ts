@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – AI Analysis Unit Tests
+// Kago AI – AI Analysis Unit Tests
 // Tests for the heuristic fallback engine and AI result parsing.
 // ============================================================
 

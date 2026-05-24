@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Formatting Utilities
+// Kago AI – Formatting Utilities
 // Human-readable formatting for display and logging.
 // ============================================================
 

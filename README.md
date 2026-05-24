@@ -1,16 +1,16 @@
-# Sentinel AI — The Moderation Operating System for Reddit
+# Kago AI — The Moderation Operating System for Reddit
 
 > **Reddit Mod Tools & Migrated Apps Hackathon 2025** — Built on Devvit
 
 **Moderation, automated. Communities, protected.**
 
-Sentinel AI is an enterprise-grade AI moderation infrastructure platform that runs natively inside Reddit. It scans every post and comment in real-time, auto-detects violations with explainable AI, prioritizes your mod queue by severity, maintains user trust scores, and gives moderators a premium one-click dashboard — all without leaving Reddit.
+Kago AI is an enterprise-grade AI moderation infrastructure platform that runs natively inside Reddit. It scans every post and comment in real-time, auto-detects violations with explainable AI, prioritizes your mod queue by severity, maintains user trust scores, and gives moderators a premium one-click dashboard — all without leaving Reddit.
 
 ---
 
-## Why Sentinel AI?
+## Why Kago AI?
 
-| Without Sentinel | With Sentinel |
+| Without Kago | With Kago |
 |---|---|
 | Mods manually read every report | AI pre-screens 100% of content instantly |
 | Flat, unsorted mod queue | Priority-ranked queue (Critical/High/Medium/Low) |
@@ -200,7 +200,7 @@ npm install -g devvit
 devvit login
 
 # 2. Install dependencies
-cd sentinel-ai
+cd kago-ai
 npm install
 
 # 3. Upload to your test subreddit
@@ -208,13 +208,13 @@ devvit upload
 devvit playtest your-test-subreddit
 
 # 4. Configure settings
-# Go to r/yoursubreddit → Mod Tools → Community Apps → Sentinel AI → App Settings
+# Go to r/yoursubreddit → Mod Tools → Community Apps → Kago AI → App Settings
 # - OpenAI API Key (optional but recommended)
 # - Auto-Remove Threshold (default: 92%)
 # - Banned Keywords (comma-separated)
 
 # 5. Open Dashboard
-# Subreddit menu → Open Sentinel Dashboard → creates pinned post
+# Subreddit menu → Open Kago Dashboard → creates pinned post
 
 # 6. Publish
 devvit publish
@@ -242,17 +242,17 @@ devvit publish
 
 ### r/AmItheAsshole (3.5M+ members)
 - **Problem**: Toxic comment floods, name-calling, brigading
-- **Sentinel Impact**: Real-time toxicity detection, auto-removal of clear violations, 60–70% queue reduction
+- **Kago Impact**: Real-time toxicity detection, auto-removal of clear violations, 60–70% queue reduction
 - **Time Saved**: ~6–8 hours/week per moderator
 
 ### r/CryptoMoonShots (~1M members)
 - **Problem**: Crypto scam promotions, rug-pull announcements, fake giveaways
-- **Sentinel Impact**: Scam detection engine + AI catches 85%+ of scam posts instantly
+- **Kago Impact**: Scam detection engine + AI catches 85%+ of scam posts instantly
 - **Time Saved**: ~3–5 hours/week
 
 ### r/relationship_advice (3M+ members)
 - **Problem**: Low-effort posts, brigading, rule violations
-- **Sentinel Impact**: Custom rules + context-aware AI; queue prioritization for urgent reports
+- **Kago Impact**: Custom rules + context-aware AI; queue prioritization for urgent reports
 - **Time Saved**: ~4–6 hours/week
 
 ---

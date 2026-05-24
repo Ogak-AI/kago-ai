@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Subreddit Rule Engine
+// Kago AI – Subreddit Rule Engine
 //
 // Allows moderators to define custom rules with keywords,
 // per-rule thresholds, and per-rule actions.

@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Scheduler Jobs
+// Kago AI – Scheduler Jobs
 // Background tasks: queue cleanup, metrics rollup.
 // ============================================================
 
@@ -30,7 +30,7 @@ Devvit.addSchedulerJob({
             subredditId,
             item.id,
             'ignored',
-            'sentinel-bot',
+            'kago-bot',
             'Auto-expired after 48 hours',
           );
           cleaned++;
@@ -38,10 +38,10 @@ Devvit.addSchedulerJob({
       }
 
       if (cleaned > 0) {
-        console.log(`[Sentinel] Cleanup: expired ${cleaned} stale queue items.`);
+        console.log(`[Kago] Cleanup: expired ${cleaned} stale queue items.`);
       }
     } catch (err) {
-      console.error('[Sentinel] Cleanup job error:', err);
+      console.error('[Kago] Cleanup job error:', err);
     }
   },
 });
@@ -61,10 +61,10 @@ Devvit.addSchedulerJob({
       const derived = computeDerivedStats(metrics);
 
       console.log(
-        `[Sentinel] Metrics — Scanned: ${metrics.totalScanned}, Auto-mod rate: ${derived.autoModRate}%, Time saved: ${derived.timeSavedHours}h`,
+        `[Kago] Metrics — Scanned: ${metrics.totalScanned}, Auto-mod rate: ${derived.autoModRate}%, Time saved: ${derived.timeSavedHours}h`,
       );
     } catch (err) {
-      console.error('[Sentinel] Metrics rollup error:', err);
+      console.error('[Kago] Metrics rollup error:', err);
     }
   },
 });
@@ -83,11 +83,11 @@ Devvit.addSchedulerJob({
 
       // Load override log
       const overridesRaw = await context.redis.zRange(
-        `sentinel:overrides:${subredditId}`, 0, -1, { by: 'rank' },
+        `kago:overrides:${subredditId}`, 0, -1, { by: 'rank' },
       );
 
       if (!overridesRaw || overridesRaw.length === 0) {
-        console.log('[Sentinel] Retraining: no overrides to analyze.');
+        console.log('[Kago] Retraining: no overrides to analyze.');
         return;
       }
 
@@ -113,16 +113,16 @@ Devvit.addSchedulerJob({
         const overrideRate = Math.round((overrideCount / total) * 100);
         if (overrideRate > 30) {
           console.log(
-            `[Sentinel] Retraining: Category "${cat}" has ${overrideRate}% override rate — consider raising threshold.`,
+            `[Kago] Retraining: Category "${cat}" has ${overrideRate}% override rate — consider raising threshold.`,
           );
         }
       }
 
       console.log(
-        `[Sentinel] Retraining: Analyzed ${overridesRaw.length} overrides across ${Object.keys(overridesByCategory).length} categories.`,
+        `[Kago] Retraining: Analyzed ${overridesRaw.length} overrides across ${Object.keys(overridesByCategory).length} categories.`,
       );
     } catch (err) {
-      console.error('[Sentinel] Retraining job error:', err);
+      console.error('[Kago] Retraining job error:', err);
     }
   },
 });

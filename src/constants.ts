@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Constants & Redis Key Builders
+// Kago AI – Constants & Redis Key Builders
 // All configuration values, weights, thresholds, and patterns.
 // ============================================================
 
@@ -7,74 +7,74 @@ import type { Severity } from './types.js';
 
 // ──────────────────────────────────────────────
 // Redis Key Builders
-// All keys are namespaced under 'sentinel:' to avoid collisions.
+// All keys are namespaced under 'kago:' to avoid collisions.
 // ──────────────────────────────────────────────
 
 export const Keys = {
   /** Sorted set: member=itemId, score=priorityScore (high = urgent) */
-  queue: (subredditId: string) => `sentinel:queue:${subredditId}`,
+  queue: (subredditId: string) => `kago:queue:${subredditId}`,
 
   /** Hash: all FlaggedItem fields */
-  item: (itemId: string) => `sentinel:item:${itemId}`,
+  item: (itemId: string) => `kago:item:${itemId}`,
 
   /** Hash: all UserReputation fields */
   user: (subredditId: string, userId: string) =>
-    `sentinel:user:${subredditId}:${userId}`,
+    `kago:user:${subredditId}:${userId}`,
 
-  /** Hash: SentinelMetrics */
-  metrics: (subredditId: string) => `sentinel:metrics:${subredditId}`,
+  /** Hash: KagoMetrics */
+  metrics: (subredditId: string) => `kago:metrics:${subredditId}`,
 
   /** String "1" with TTL 24h — deduplication guard */
-  processed: (itemId: string) => `sentinel:processed:${itemId}`,
+  processed: (itemId: string) => `kago:processed:${itemId}`,
 
   /** Sorted set: ModOverride JSON strings ordered by timestamp */
-  overrides: (subredditId: string) => `sentinel:overrides:${subredditId}`,
+  overrides: (subredditId: string) => `kago:overrides:${subredditId}`,
 
   /** String: postId of pinned dashboard post */
-  dashboardPost: (subredditId: string) => `sentinel:dashboard:${subredditId}`,
+  dashboardPost: (subredditId: string) => `kago:dashboard:${subredditId}`,
 
   /** Hash: cached settings per subreddit */
-  settingsCache: (subredditId: string) => `sentinel:settings:${subredditId}`,
+  settingsCache: (subredditId: string) => `kago:settings:${subredditId}`,
 
   /** Sorted set of user IDs by risk (score = 100 - trustScore) */
-  userRiskSet: (subredditId: string) => `sentinel:userrisk:${subredditId}`,
+  userRiskSet: (subredditId: string) => `kago:userrisk:${subredditId}`,
 
   /**
    * Sorted set: member=timestamp_itemId, score=epochMs.
    * Tracks violations per user in a rolling 24h window.
    */
   userViolationWindow: (subredditId: string, userId: string) =>
-    `sentinel:vwin:${subredditId}:${userId}`,
+    `kago:vwin:${subredditId}:${userId}`,
 
   /** JSON string: SubredditRule[] defined by mods */
-  customRules: (subredditId: string) => `sentinel:rules:${subredditId}`,
+  customRules: (subredditId: string) => `kago:rules:${subredditId}`,
 
   /** Sorted set: member=JSON audit entry, score=timestamp. Rolling action audit log. */
-  audit: (subredditId: string) => `sentinel:audit:${subredditId}`,
+  audit: (subredditId: string) => `kago:audit:${subredditId}`,
 
   /** Hash: per-category adaptive thresholds */
-  thresholds: (subredditId: string) => `sentinel:thresholds:${subredditId}`,
+  thresholds: (subredditId: string) => `kago:thresholds:${subredditId}`,
 
   /** String: daily content volume counter for cost estimation */
-  dailyVolume: (subredditId: string, date: string) => `sentinel:volume:${subredditId}:${date}`,
+  dailyVolume: (subredditId: string, date: string) => `kago:volume:${subredditId}:${date}`,
 
   /** String: OpenAI daily call counter (rate limiter) */
-  openaiCalls: (subredditId: string, date: string) => `sentinel:openai_calls:${subredditId}:${date}`,
+  openaiCalls: (subredditId: string, date: string) => `kago:openai_calls:${subredditId}:${date}`,
 
   /** Adaptive learning state JSON */
-  adaptive: (subredditId: string) => `sentinel:adaptive:${subredditId}`,
+  adaptive: (subredditId: string) => `kago:adaptive:${subredditId}`,
 
   /** Rule hit counter hash: field=ruleId, value=count */
-  ruleHits: (subredditId: string) => `sentinel:rulehits:${subredditId}`,
+  ruleHits: (subredditId: string) => `kago:rulehits:${subredditId}`,
 
   /** String: cached AI analysis result for dedup */
-  analysisCache: (contentHash: string) => `sentinel:aicache:${contentHash}`,
+  analysisCache: (contentHash: string) => `kago:aicache:${contentHash}`,
 
   /** Rate limiter daily key */
-  rateLimit: (subredditId: string) => `sentinel:ratelimit:${subredditId}:${new Date().toISOString().slice(0, 10)}`,
+  rateLimit: (subredditId: string) => `kago:ratelimit:${subredditId}:${new Date().toISOString().slice(0, 10)}`,
 
   /** Cumulative cost tracker */
-  cost: (subredditId: string) => `sentinel:cost:${subredditId}`,
+  cost: (subredditId: string) => `kago:cost:${subredditId}`,
 };
 
 
@@ -245,11 +245,11 @@ export const LOW_EFFORT_MAX_LENGTH = 8;
 // ──────────────────────────────────────────────
 
 export const JOBS = {
-  CLEANUP_QUEUE: 'sentinel_cleanup_queue',
-  METRICS_ROLLUP: 'sentinel_metrics_rollup',
-  THRESHOLD_RECALC: 'sentinel_threshold_recalc',
-  REPUTATION_DECAY: 'sentinel_reputation_decay',
-  RETRAINING: 'sentinel_retraining',
+  CLEANUP_QUEUE: 'kago_cleanup_queue',
+  METRICS_ROLLUP: 'kago_metrics_rollup',
+  THRESHOLD_RECALC: 'kago_threshold_recalc',
+  REPUTATION_DECAY: 'kago_reputation_decay',
+  RETRAINING: 'kago_retraining',
 } as const;
 
 /** Default daily API call limit */
@@ -274,7 +274,7 @@ export const DEFAULT_SETTINGS = {
   bannedKeywords: [] as string[],
   subredditRules: '1. Be respectful\n2. No spam\n3. No self-promotion\n4. Stay on topic',
   removalComment:
-    'Your post/comment was automatically removed by Sentinel AI for the following reason: {reason}. If you believe this was a mistake, please message the moderators.',
+    'Your post/comment was automatically removed by Kago AI for the following reason: {reason}. If you believe this was a mistake, please message the moderators.',
   enableRemovalComments: true,
 } as const;
 

@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Structured Logger
+// Kago AI – Structured Logger
 // Provides consistent, tagged log output with severity levels.
 // ============================================================
 
@@ -13,8 +13,8 @@ const LOG_COLORS: Record<LogLevel, string> = {
 };
 
 /**
- * Structured logger for Sentinel AI.
- * All log entries are prefixed with [Sentinel/{module}] for easy filtering.
+ * Structured logger for Kago AI.
+ * All log entries are prefixed with [Kago/{module}] for easy filtering.
  */
 export class Logger {
   private module: string;
@@ -25,7 +25,7 @@ export class Logger {
 
   private format(level: LogLevel, message: string, data?: Record<string, unknown>): string {
     const timestamp = new Date().toISOString().slice(11, 23);
-    const prefix = `[Sentinel/${this.module}]`;
+    const prefix = `[Kago/${this.module}]`;
     const dataStr = data ? ` ${JSON.stringify(data)}` : '';
     return `${LOG_COLORS[level]} ${timestamp} ${prefix} ${message}${dataStr}`;
   }

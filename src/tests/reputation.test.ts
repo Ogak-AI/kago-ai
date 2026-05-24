@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Reputation System Unit Tests
+// Kago AI – Reputation System Unit Tests
 // Validates trust score computation, risk levels, tiers, and
 // decay/recovery mechanics.
 // ============================================================

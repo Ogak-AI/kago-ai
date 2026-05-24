@@ -1,19 +1,23 @@
 {
-  "name": "sentinel-ai",
+  "name": "kago-ai",
   "version": "1.0.0",
-  "description": "Sentinel AI: The Moderation Operating System for Reddit — AI-powered, Devvit-native",
+  "description": "Kago AI: The Moderation Operating System for Reddit — AI-powered, Devvit-native",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "devvit playtest",
+    "deploy": "devvit upload",
+    "launch": "devvit publish",
     "upload": "devvit upload",
     "publish": "devvit publish",
     "build": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
-    "test": "node src/tests/reputation.test.ts && node src/tests/rules.test.ts && node src/tests/queue.test.ts && node src/tests/ai.test.ts",
-    "test:reputation": "node src/tests/reputation.test.ts",
-    "test:rules": "node src/tests/rules.test.ts",
-    "test:queue": "node src/tests/queue.test.ts",
-    "test:ai": "node src/tests/ai.test.ts"
+    "test": "tsx src/tests/reputation.test.ts && tsx src/tests/rules.test.ts && tsx src/tests/queue.test.ts && tsx src/tests/ai.test.ts",
+    "test:reputation": "tsx src/tests/reputation.test.ts",
+    "test:rules": "tsx src/tests/rules.test.ts",
+    "test:queue": "tsx src/tests/queue.test.ts",
+    "test:ai": "tsx src/tests/ai.test.ts"
   },
   "dependencies": {
     "@devvit/public-api": "0.11.5"
@@ -22,6 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
+    "tsx": "^4.22.3",
     "typescript": "^5.3.3"
   }
 }

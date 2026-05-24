@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Queue Ranking Unit Tests
+// Kago AI – Queue Ranking Unit Tests
 // Validates priority score computation and queue level assignment.
 // ============================================================
 

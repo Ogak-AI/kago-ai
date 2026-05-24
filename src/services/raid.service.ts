@@ -3,8 +3,8 @@ import type { RedisClient } from '@devvit/public-api';
 const RAID_WINDOW_MS = 300000;
 const RAID_ITEM_THRESHOLD = 5;
 const RAID_UNIQUE_AUTHORS_THRESHOLD = 3;
-const RAID_KEY = (subredditId: string) => `sentinel:raid:${subredditId}`;
-const RAID_META_KEY = (subredditId: string) => `sentinel:raidmeta:${subredditId}`;
+const RAID_KEY = (subredditId: string) => `kago:raid:${subredditId}`;
+const RAID_META_KEY = (subredditId: string) => `kago:raidmeta:${subredditId}`;
 
 export interface RaidAlert {
   id: string;

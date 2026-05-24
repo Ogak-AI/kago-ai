@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Comment Submit Trigger
+// Kago AI – Comment Submit Trigger
 // Same pipeline as post trigger, adapted for comments.
 // ============================================================
 
@@ -33,6 +33,11 @@ import {
 } from '../services/rules.service.js';
 import { recordAuditEntry, buildAuditEntry } from '../services/audit.service.js';
 import { getAdaptiveThreshold } from '../services/adaptive.service.js';
+import {
+  publishEvent,
+  makeAutoActionEvent,
+  makeQueueAddedEvent,
+} from '../services/realtime.service.js';
 import { AUTO_BAN_DURATION_DAYS } from '../constants.js';
 
 export async function handleCommentSubmit(
@@ -74,7 +79,7 @@ export async function handleCommentSubmit(
       karma = (userInfo.linkKarma ?? 0) + (userInfo.commentKarma ?? 0);
     }
   } catch {
-    console.warn(`[Sentinel] Could not fetch user info for ${authorName}`);
+    console.warn(`[Kago] Could not fetch user info for ${authorName}`);
   }
 
   const [rep, recentViolations24h] = await Promise.all([
@@ -120,6 +125,10 @@ export async function handleCommentSubmit(
       triggeredRuleName ? 'rule_engine' : 'ai_auto',
       decision.reason,
     ));
+    await publishEvent(context, subredditId, makeAutoActionEvent(
+      itemId, 'comment', 'auto_approve', analysis.category, analysis.confidence,
+      authorName, decision.reason,
+    ));
     return;
   }
 
@@ -129,7 +138,7 @@ export async function handleCommentSubmit(
       await recordTemporalViolation(context.redis, subredditId, authorId, itemId);
       await recordViolation(context.redis, subredditId, authorId, authorName, accountAgeDays, karma);
       await recordAutoRemoval(context.redis, subredditId);
-      console.log(`[Sentinel/comment] AUTO-REMOVED ${itemId}`);
+      console.log(`[Kago/comment] AUTO-REMOVED ${itemId}`);
 
       await recordAuditEntry(context.redis, subredditId, buildAuditEntry(
         'auto_remove', itemId, 'comment', body.slice(0, 120),
@@ -137,8 +146,12 @@ export async function handleCommentSubmit(
         triggeredRuleName ? 'rule_engine' : 'ai_auto',
         decision.reason,
       ));
+      await publishEvent(context, subredditId, makeAutoActionEvent(
+        itemId, 'comment', 'auto_remove', analysis.category, analysis.confidence,
+        authorName, decision.reason,
+      ));
     } catch (err) {
-      console.error(`[Sentinel/comment] Remove failed for ${itemId}:`, err);
+      console.error(`[Kago/comment] Remove failed for ${itemId}:`, err);
     }
     return;
   }
@@ -163,8 +176,12 @@ export async function handleCommentSubmit(
         triggeredRuleName ? 'rule_engine' : 'ai_auto',
         `Auto-banned (${AUTO_BAN_DURATION_DAYS}d): ${decision.reason}`,
       ));
+      await publishEvent(context, subredditId, makeAutoActionEvent(
+        itemId, 'comment', 'auto_ban_temp', analysis.category, analysis.confidence,
+        authorName, decision.reason,
+      ));
     } catch (err) {
-      console.error(`[Sentinel/comment] Auto-ban failed:`, err);
+      console.error(`[Kago/comment] Auto-ban failed:`, err);
     }
     return;
   }
@@ -175,7 +192,7 @@ export async function handleCommentSubmit(
       ? `https://reddit.com/r/${subredditName}/comments/${comment.postId.replace('t3_', '')}/`
       : `https://reddit.com/r/${subredditName}/`;
 
-    await enqueueItem(context.redis, subredditId, analysis, {
+    const queued = await enqueueItem(context.redis, subredditId, analysis, {
       id: itemId,
       type: 'comment',
       body: body.slice(0, 600),
@@ -189,5 +206,7 @@ export async function handleCommentSubmit(
       decisionReason: decision.reason,
       triggeredRule: triggeredRuleName,
     });
+
+    await publishEvent(context, subredditId, makeQueueAddedEvent(queued));
   }
 }

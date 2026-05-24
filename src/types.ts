@@ -1,5 +1,5 @@
 // ============================================================
-// Sentinel AI – Shared Type Definitions
+// Kago AI – Shared Type Definitions
 // Complete type system for the moderation platform.
 // ============================================================
 
@@ -238,7 +238,7 @@ export interface AuditEntry {
 // App Metrics
 // ──────────────────────────────────────────────
 
-export interface SentinelMetrics {
+export interface KagoMetrics {
   subredditId: string;
   totalScanned: number;
   autoRemoved: number;
@@ -271,7 +271,7 @@ export interface SentinelMetrics {
 // App Settings (loaded from Devvit settings)
 // ──────────────────────────────────────────────
 
-export interface SentinelSettings {
+export interface KagoSettings {
   openaiApiKey: string;
   aiModel: string;
   autoRemoveThreshold: number;
@@ -376,10 +376,10 @@ export interface ModSummaryPayload {
 
 export interface InitDataPayload {
   queueItems: FlaggedItem[];
-  metrics: SentinelMetrics;
+  metrics: KagoMetrics;
   derived: DerivedStats;
   topUsers: UserReputation[];
-  settings: Partial<SentinelSettings>;
+  settings: Partial<KagoSettings>;
   customRules?: SubredditRule[];
   isModerator: boolean;
   currentUsername: string;
@@ -408,7 +408,7 @@ export interface BatchActionPayload {
 }
 
 export interface SettingsSavePayload {
-  settings: Partial<SentinelSettings>;
+  settings: Partial<KagoSettings>;
 }
 
 export interface RulesSavePayload {
